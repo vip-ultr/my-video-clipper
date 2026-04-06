@@ -25,6 +25,9 @@ export default function UploadPage() {
     error,
     setVideoFile,
     setProjectName,
+    setClippingMode,
+    setClipCount,
+    setClipDuration,
     uploadVideo
   } = useUpload();
 
@@ -133,26 +136,68 @@ export default function UploadPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">Number of Clips</label>
-            <Input
-              type="range"
-              min="1"
-              max="20"
-              defaultValue="5"
-              className="w-full"
-              disabled={isUploading}
-            />
-            <p className="text-sm text-gray-600 mt-2">Create approximately 5 clips</p>
+            <label className="block text-sm font-medium mb-2">Clipping Mode</label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setClippingMode('ai-detection')}
+                className={`p-4 border rounded-lg transition ${
+                  clippingMode === 'ai-detection'
+                    ? 'border-black bg-black text-white'
+                    : 'border-gray-300 hover:border-gray-400'
+                }`}
+                disabled={isUploading}
+              >
+                <div className="font-semibold">🤖 AI Detection</div>
+                <div className={`text-sm ${clippingMode === 'ai-detection' ? 'text-gray-200' : 'text-gray-600'}`}>
+                  Auto-detect high-engagement moments
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setClippingMode('manual-slicing')}
+                className={`p-4 border rounded-lg transition ${
+                  clippingMode === 'manual-slicing'
+                    ? 'border-black bg-black text-white'
+                    : 'border-gray-300 hover:border-gray-400'
+                }`}
+                disabled={isUploading}
+              >
+                <div className="font-semibold">✂️ Manual Slicing</div>
+                <div className={`text-sm ${clippingMode === 'manual-slicing' ? 'text-gray-200' : 'text-gray-600'}`}>
+                  Define clips by time
+                </div>
+              </button>
+            </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">Clip Duration (seconds)</label>
+            <label className="block text-sm font-medium mb-2">Number of Clips: {clipCount}</label>
+            <input
+              type="range"
+              min="1"
+              max="20"
+              value={clipCount}
+              onChange={(e) => setClipCount(Number(e.target.value))}
+              className="w-full"
+              disabled={isUploading}
+            />
+            <p className="text-sm text-gray-600 mt-2">Create approximately {clipCount} clips</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">Clip Duration: {clipDuration}s</label>
             <div className="grid grid-cols-4 gap-2">
               {[15, 30, 40, 60].map((duration) => (
                 <button
                   key={duration}
                   type="button"
-                  className="p-2 border border-gray-300 rounded hover:border-black transition"
+                  onClick={() => setClipDuration(duration)}
+                  className={`p-2 border rounded transition ${
+                    clipDuration === duration
+                      ? 'border-black bg-black text-white'
+                      : 'border-gray-300 hover:border-black'
+                  }`}
                   disabled={isUploading}
                 >
                   {duration}s

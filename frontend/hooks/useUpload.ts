@@ -17,6 +17,9 @@ export function useUpload() {
     error,
     setVideoFile,
     setProjectName,
+    setClippingMode,
+    setClipCount,
+    setClipDuration,
     setVideoId,
     setIsUploading,
     setUploadProgress,
@@ -64,6 +67,9 @@ export function useUpload() {
     error,
     setVideoFile,
     setProjectName,
+    setClippingMode,
+    setClipCount,
+    setClipDuration,
     uploadVideo
   };
 }

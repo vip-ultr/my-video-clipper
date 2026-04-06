@@ -88,6 +88,40 @@ router.get(
   })
 );
 
+// Get watermark preview
+router.get(
+  '/preview',
+  asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.query;
+
+    if (!id || typeof id !== 'string') {
+      return res.status(400).json({ error: 'Watermark ID is required' });
+    }
+
+    // Special case for default watermark
+    if (id === 'default') {
+      return res.sendFile(`${config.paths.watermarksDir}/default-watermark.png`);
+    }
+
+    const watermarkPath = `${config.paths.watermarksDir}/${id}.png`;
+
+    if (!fs.existsSync(watermarkPath)) {
+      // Try with other extensions
+      const dir = config.paths.watermarksDir;
+      const files = fs.readdirSync(dir);
+      const watermarkFile = files.find(f => f.startsWith(id));
+
+      if (!watermarkFile) {
+        return res.status(404).json({ error: 'Watermark not found' });
+      }
+
+      return res.sendFile(`${dir}/${watermarkFile}`);
+    }
+
+    res.sendFile(watermarkPath);
+  })
+);
+
 // Delete watermark
 router.delete(
   '/:watermarkId',
