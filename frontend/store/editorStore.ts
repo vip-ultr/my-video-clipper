@@ -41,7 +41,7 @@ export interface EditorState {
 
 const initialState = {
   subtitlesEnabled: false,
-  subtitleStyle: 'classic',
+  subtitleStyle: 'emphasis',
   subtitlePrimaryColor: '#FFFFFF',
   subtitleSecondaryColor: '#999999',
   subtitlePosition: 'bottom',
