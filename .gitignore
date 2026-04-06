@@ -1,0 +1,24 @@
+node_modules/
+.env
+.env.local
+.env.*.local
+.next/
+out/
+dist/
+build/
+*.log
+.DS_Store
+.vscode/
+.idea/
+tmp/
+*.mp4
+*.mov
+.turbo/
+
+# Claude Code
+.claude/
+
+# Credential files (contain sensitive keys)
+CREDENTIALS.md
+SETUP_COMPLETE.md
+QUICKSTART.md
