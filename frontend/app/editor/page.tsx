@@ -14,6 +14,7 @@ export default function EditorPage() {
     subtitleStyle,
     subtitlePrimaryColor,
     subtitleSecondaryColor,
+    subtitlePosition,
     blurEnabled,
     blurStrength,
     watermarkType,
@@ -29,6 +30,7 @@ export default function EditorPage() {
     setSubtitleStyle,
     setSubtitlePrimaryColor,
     setSubtitleSecondaryColor,
+    setSubtitlePosition,
     setBlurEnabled,
     setBlurStrength,
     setWatermarkType,
@@ -127,9 +129,9 @@ export default function EditorPage() {
                     onChange={(e) => setSubtitleStyle(e.target.value)}
                     className="w-full p-2 border border-gray-300 rounded text-sm"
                   >
-                    <option value="classic">Classic</option>
-                    <option value="modern">Modern</option>
-                    <option value="minimal">Minimal</option>
+                    <option value="emphasis">Emphasis</option>
+                    <option value="rhythm">Rhythm</option>
+                    <option value="uniform">Uniform</option>
                   </select>
                 </div>
 
@@ -151,6 +153,19 @@ export default function EditorPage() {
                     onChange={(e) => setSubtitleSecondaryColor(e.target.value)}
                     className="w-full h-8 rounded cursor-pointer"
                   />
+                </div>
+
+                <div>
+                  <label className="text-sm block mb-1">Position</label>
+                  <select
+                    value={subtitlePosition}
+                    onChange={(e) => setSubtitlePosition(e.target.value)}
+                    className="w-full p-1 border border-gray-300 rounded text-xs"
+                  >
+                    <option value="top">Top</option>
+                    <option value="bottom">Bottom</option>
+                    <option value="center">Center</option>
+                  </select>
                 </div>
               </div>
             )}

@@ -104,13 +104,13 @@ export function burnSubtitles(
     // Subtitle styling options
     let filter = '';
     switch (style) {
-      case 'classic':
+      case 'emphasis':
         filter = `subtitles=${subtitlePath}:fontsize=48:fontcolor=white:borderw=2:bordercolor=black:margin_v=40`;
         break;
-      case 'modern':
+      case 'rhythm':
         filter = `subtitles=${subtitlePath}:fontsize=42:fontcolor=white:shadowx=2:shadowy=2:shadowcolor=black:margin_v=40`;
         break;
-      case 'minimal':
+      case 'uniform':
         filter = `subtitles=${subtitlePath}:fontsize=40:fontcolor=white:margin_v=40`;
         break;
       default:
