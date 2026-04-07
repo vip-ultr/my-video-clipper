@@ -16,7 +16,6 @@ export function VideoUpload({
   onDrag,
   onDrop,
   onFileChange,
-  onClickUpload,
   videoFile
 }: VideoUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
