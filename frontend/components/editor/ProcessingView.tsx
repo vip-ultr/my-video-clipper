@@ -27,7 +27,7 @@ interface ClipSuggestion {
 
 export function ProcessingView({ videoId, onClipsReady }: ProcessingViewProps) {
   const router = useRouter();
-  const { clipCount, projectName, clippingMode: storeClippingMode = 'manual-slicing' } = useUploadStore();
+  const { clipCount, projectName, clipDuration, clippingMode: storeClippingMode = 'manual-slicing' } = useUploadStore();
 
   // Convert store format to backend format
   const clippingMode = storeClippingMode === 'ai-detection' ? 'AI' : 'MANUAL';
@@ -65,7 +65,8 @@ export function ProcessingView({ videoId, onClipsReady }: ProcessingViewProps) {
             // Call backend to generate clips based on mode
             const response = await api.generateClips(videoId, {
               clippingMode: clippingMode || 'MANUAL',
-              clipCount: clipCount || 3
+              clipCount: clipCount || 3,
+              clipDuration: clipDuration || undefined
             });
 
             if (response.data.success && response.data.clips) {

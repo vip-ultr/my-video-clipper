@@ -185,3 +185,28 @@ export async function healthCheck(): Promise<boolean> {
     return false;
   }
 }
+
+// Watermark operations - Download from Supabase Storage
+export async function downloadWatermarkFromStorage(bucket: string, filePath: string): Promise<Buffer | null> {
+  try {
+    const { data, error } = await supabase.storage
+      .from(bucket)
+      .download(filePath);
+
+    if (error) {
+      logger.error(`Failed to download watermark from ${bucket}/${filePath}:`, error);
+      return null;
+    }
+
+    if (data instanceof Blob) {
+      // Convert Blob to Buffer
+      const arrayBuffer = await data.arrayBuffer();
+      return Buffer.from(arrayBuffer);
+    }
+
+    return data as Buffer;
+  } catch (error) {
+    logger.error(`Error downloading watermark: ${error}`);
+    return null;
+  }
+}

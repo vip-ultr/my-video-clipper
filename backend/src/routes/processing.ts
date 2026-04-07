@@ -103,7 +103,7 @@ router.post(
   '/:videoId/generate-clips',
   asyncHandler(async (req: Request, res: Response) => {
     const { videoId } = req.params;
-    const { clippingMode = 'MANUAL', clipCount = 3 } = req.body;
+    const { clippingMode = 'MANUAL', clipCount = 3, clipDuration = null } = req.body;
 
     const video = await getVideo(videoId);
     if (!video) {
@@ -116,12 +116,15 @@ router.post(
       let clipSuggestions = [];
 
       if (clippingMode === 'MANUAL') {
-        // Manual clipping: divide video into equal segments
-        const clipDuration = video.duration_seconds / clipCount;
+        // Manual clipping: use desired clip duration or divide by clip count
+        // If clipDuration is provided, use it; otherwise calculate from clipCount
+        const desiredDuration = clipDuration || (video.duration_seconds / clipCount);
+        let clipIndex = 0;
+        let currentTime = 0;
 
-        for (let i = 0; i < clipCount; i++) {
-          const startTime = i * clipDuration;
-          const endTime = Math.min((i + 1) * clipDuration, video.duration_seconds);
+        while (currentTime < video.duration_seconds && clipIndex < 100) { // Safety limit of 100 clips
+          const startTime = currentTime;
+          const endTime = Math.min(currentTime + desiredDuration, video.duration_seconds);
 
           // Save clip suggestion to database
           const clipId = randomUUID();
@@ -129,7 +132,7 @@ router.post(
             id: clipId,
             video_id: videoId,
             project_name: video.project_name,
-            clip_index: i,
+            clip_index: clipIndex,
             start_time: startTime,
             end_time: endTime,
             duration_seconds: Math.ceil(endTime - startTime),
@@ -160,13 +163,22 @@ router.post(
 
           clipSuggestions.push({
             id: clipId,
-            index: i,
+            index: clipIndex,
             startTime,
             endTime,
             duration: Math.ceil(endTime - startTime),
             engagementScore: 0.5, // Default for manual clips
-            reason: `Segment ${i + 1} of ${clipCount}`
+            reason: `Segment ${clipIndex + 1} - ${Math.ceil(endTime - startTime)}s`
           });
+
+          // Move to next clip
+          currentTime = endTime;
+          clipIndex++;
+
+          // Stop if we've reached the end of the video
+          if (endTime >= video.duration_seconds) {
+            break;
+          }
         }
       } else if (clippingMode === 'AI') {
         // AI clipping: use sentiment analysis to identify high-engagement segments

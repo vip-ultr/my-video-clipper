@@ -1,11 +1,13 @@
 import { ClipSettings } from '../types/index.js';
 import * as ffmpegService from './ffmpeg.js';
 import * as supabaseService from './supabase.js';
+import * as subtitleService from './subtitles.js';
 import { logger } from '../utils/logger.js';
 import fs from 'fs';
 import path from 'path';
 import { config } from '../utils/config.js';
 import { randomUUID } from 'crypto';
+import https from 'https';
 
 export async function processClip(settings: ClipSettings): Promise<{ success: boolean; outputPath?: string; clipId?: string; error?: string }> {
   const tempDir = config.paths.clipsDir;
@@ -82,37 +84,115 @@ export async function processClip(settings: ClipSettings): Promise<{ success: bo
     // Step 4: Burn subtitles if enabled
     if (settings.subtitlesEnabled) {
       logger.info('Step 4: Burning subtitles...');
-      // Note: This requires subtitle file to be generated from transcription
-      // For now, skipping if no subtitle file is available
-      // TODO: Integrate with Whisper transcription to generate subtitle files
-      logger.info('Step 4: Subtitles enabled but transcription not yet implemented, continuing without subtitles');
+      const subtitledPath = path.join(tempDir, `subtitled-${clipFileName}`);
+      let subtitleFilePath: string | null = null;
+
+      try {
+        // Generate subtitle file (using mock for now, will use Whisper in production)
+        subtitleFilePath = subtitleService.generateMockSubtitles(
+          settings.startTime,
+          settings.endTime,
+          tempDir
+        );
+
+        if (subtitleFilePath && fs.existsSync(subtitleFilePath)) {
+          // Escape the path for FFmpeg (especially on Windows with colons)
+          const escapedPath = subtitleService.escapeSubtitlePath(subtitleFilePath);
+
+          await ffmpegService.burnSubtitles(
+            currentInput,
+            escapedPath,
+            subtitledPath,
+            settings.subtitleStyle || 'default'
+          );
+
+          fs.unlinkSync(currentInput);
+          currentInput = subtitledPath;
+          logger.info('Subtitles burned successfully');
+        } else {
+          logger.warn('Could not generate subtitle file, skipping subtitles');
+        }
+      } catch (subtitleError) {
+        logger.error('Error during subtitle processing:', subtitleError);
+        // Continue without subtitles
+      } finally {
+        // Clean up subtitle file
+        if (subtitleFilePath && fs.existsSync(subtitleFilePath)) {
+          try {
+            fs.unlinkSync(subtitleFilePath);
+            logger.info('Cleaned up temporary subtitle file');
+          } catch (cleanupError) {
+            logger.warn('Failed to cleanup temporary subtitle file:', cleanupError);
+          }
+        }
+      }
     }
 
     // Step 5: Add watermark if specified
     if (settings.watermarkType && settings.watermarkType !== 'none') {
       logger.info('Step 5: Adding watermark...');
       const watermarkedPath = path.join(tempDir, `watermarked-${clipFileName}`);
-
       let watermarkImagePath = '';
-      if (settings.watermarkType === 'default') {
-        watermarkImagePath = path.join(process.cwd(), 'public', 'default-watermark.png');
-      } else if (settings.watermarkId) {
-        // Get custom watermark path from Supabase
-        // For now, use a default path
-        watermarkImagePath = path.join(config.paths.watermarksDir, `${settings.watermarkId}.png`);
-      }
+      let tempWatermarkPath: string | null = null;
 
-      if (fs.existsSync(watermarkImagePath)) {
-        await ffmpegService.addWatermark(
-          currentInput,
-          watermarkImagePath,
-          settings.watermarkPosition,
-          settings.watermarkSize,
-          settings.watermarkOpacity,
-          watermarkedPath
-        );
-        fs.unlinkSync(currentInput);
-        currentInput = watermarkedPath;
+      try {
+        if (settings.watermarkType === 'default') {
+          // Download default watermark from Supabase Storage
+          logger.info('Downloading default watermark from Supabase Storage...');
+          const watermarkBuffer = await supabaseService.downloadWatermarkFromStorage('public-watermark', 'default-watermark.png');
+
+          if (watermarkBuffer) {
+            // Save to temporary file
+            tempWatermarkPath = path.join(tempDir, `temp-watermark-${Date.now()}.png`);
+            fs.writeFileSync(tempWatermarkPath, watermarkBuffer);
+            watermarkImagePath = tempWatermarkPath;
+            logger.info(`Watermark saved to temporary path: ${watermarkImagePath}`);
+          } else {
+            logger.warn('Default watermark not found in Supabase Storage');
+          }
+        } else if (settings.watermarkId) {
+          // Download custom watermark from Supabase Storage
+          logger.info(`Downloading custom watermark ${settings.watermarkId} from Supabase Storage...`);
+          const watermarkBuffer = await supabaseService.downloadWatermarkFromStorage('watermarks', `${settings.watermarkId}.png`);
+
+          if (watermarkBuffer) {
+            tempWatermarkPath = path.join(tempDir, `temp-watermark-${settings.watermarkId}.png`);
+            fs.writeFileSync(tempWatermarkPath, watermarkBuffer);
+            watermarkImagePath = tempWatermarkPath;
+            logger.info(`Custom watermark saved to temporary path: ${watermarkImagePath}`);
+          } else {
+            logger.warn(`Custom watermark ${settings.watermarkId} not found in Supabase Storage`);
+          }
+        }
+
+        if (watermarkImagePath && fs.existsSync(watermarkImagePath)) {
+          await ffmpegService.addWatermark(
+            currentInput,
+            watermarkImagePath,
+            settings.watermarkPosition,
+            settings.watermarkSize,
+            settings.watermarkOpacity,
+            watermarkedPath
+          );
+          fs.unlinkSync(currentInput);
+          currentInput = watermarkedPath;
+          logger.info('Watermark applied successfully');
+        } else {
+          logger.warn('Watermark file not available, skipping watermark step');
+        }
+      } catch (watermarkError) {
+        logger.error('Error during watermark processing:', watermarkError);
+        // Continue without watermark
+      } finally {
+        // Clean up temporary watermark file
+        if (tempWatermarkPath && fs.existsSync(tempWatermarkPath)) {
+          try {
+            fs.unlinkSync(tempWatermarkPath);
+            logger.info('Cleaned up temporary watermark file');
+          } catch (cleanupError) {
+            logger.warn('Failed to cleanup temporary watermark file:', cleanupError);
+          }
+        }
       }
     }
 
