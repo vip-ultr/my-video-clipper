@@ -1,5 +1,15 @@
 import { create } from 'zustand';
 
+export interface ClipItem {
+  id: string;
+  index: number;
+  startTime: number;
+  endTime: number;
+  duration: number;
+  engagementScore: number;
+  reason: string;
+}
+
 export interface UploadState {
   videoFile: File | null;
   projectName: string;
@@ -7,6 +17,7 @@ export interface UploadState {
   clipCount: number;
   clipDuration: number;
   clipStartTimes: string[];
+  generatedClips: ClipItem[];
   videoId: string | null;
   isUploading: boolean;
   uploadProgress: number;
@@ -18,6 +29,7 @@ export interface UploadState {
   setClipCount: (count: number) => void;
   setClipDuration: (duration: number) => void;
   setClipStartTimes: (times: string[]) => void;
+  setGeneratedClips: (clips: ClipItem[]) => void;
   setVideoId: (id: string | null) => void;
   setIsUploading: (uploading: boolean) => void;
   setUploadProgress: (progress: number) => void;
@@ -32,6 +44,7 @@ const initialState = {
   clipCount: 5,
   clipDuration: 40,
   clipStartTimes: [],
+  generatedClips: [],
   videoId: null,
   isUploading: false,
   uploadProgress: 0,
@@ -47,6 +60,7 @@ export const useUploadStore = create<UploadState>((set) => ({
   setClipCount: (count) => set({ clipCount: count }),
   setClipDuration: (duration) => set({ clipDuration: duration }),
   setClipStartTimes: (times) => set({ clipStartTimes: times }),
+  setGeneratedClips: (clips) => set({ generatedClips: clips }),
   setVideoId: (id) => set({ videoId: id }),
   setIsUploading: (uploading) => set({ isUploading: uploading }),
   setUploadProgress: (progress) => set({ uploadProgress: progress }),

@@ -64,9 +64,14 @@ export async function getClipsForVideo(videoId: string) {
 }
 
 // Download clip
-export async function downloadClip(clipId: string) {
+export async function downloadClip(clipId: string, onProgress?: (percent: number) => void) {
   return apiClient.get(`/download/${clipId}`, {
-    responseType: 'blob'
+    responseType: 'blob',
+    onDownloadProgress: (event) => {
+      if (onProgress && event.total) {
+        onProgress(Math.round((event.loaded * 100) / event.total));
+      }
+    }
   });
 }
 
@@ -91,9 +96,14 @@ export async function generateClips(videoId: string, options: { clippingMode?: s
 }
 
 // Quick download clip (fast raw extraction)
-export async function quickDownloadClip(clipId: string) {
+export async function quickDownloadClip(clipId: string, onProgress?: (percent: number) => void) {
   return apiClient.get(`/clips/quick-download/${clipId}`, {
-    responseType: 'blob'
+    responseType: 'blob',
+    onDownloadProgress: (event) => {
+      if (onProgress && event.total) {
+        onProgress(Math.round((event.loaded * 100) / event.total));
+      }
+    }
   });
 }
 
