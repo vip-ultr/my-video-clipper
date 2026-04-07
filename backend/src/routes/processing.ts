@@ -116,15 +116,24 @@ router.post(
       let clipSuggestions = [];
 
       if (clippingMode === 'MANUAL') {
-        // Manual clipping: use desired clip duration or divide by clip count
-        // If clipDuration is provided, use it; otherwise calculate from clipCount
-        const desiredDuration = clipDuration || (video.duration_seconds / clipCount);
-        let clipIndex = 0;
-        let currentTime = 0;
+        // Manual clipping math:
+        // section_duration = total_duration / clip_count
+        // each clip starts at section_number * section_duration
+        const normalizedClipCount = Math.max(1, Math.floor(Number(clipCount) || 1));
+        const sectionDuration = video.duration_seconds / normalizedClipCount;
+        const desiredClipDuration = clipDuration && clipDuration > 0
+          ? clipDuration
+          : sectionDuration;
 
-        while (currentTime < video.duration_seconds && clipIndex < 100) { // Safety limit of 100 clips
-          const startTime = currentTime;
-          const endTime = Math.min(currentTime + desiredDuration, video.duration_seconds);
+        for (let clipIndex = 0; clipIndex < normalizedClipCount; clipIndex++) {
+          const startTime = Math.floor(clipIndex * sectionDuration);
+          const endTime = Math.min(
+            Math.floor(startTime + desiredClipDuration),
+            video.duration_seconds
+          );
+          if (startTime >= endTime) {
+            continue;
+          }
 
           // Save clip suggestion to database
           const clipId = randomUUID();
@@ -170,15 +179,6 @@ router.post(
             engagementScore: 0.5, // Default for manual clips
             reason: `Segment ${clipIndex + 1} - ${Math.ceil(endTime - startTime)}s`
           });
-
-          // Move to next clip
-          currentTime = endTime;
-          clipIndex++;
-
-          // Stop if we've reached the end of the video
-          if (endTime >= video.duration_seconds) {
-            break;
-          }
         }
       } else if (clippingMode === 'AI') {
         // AI clipping: use sentiment analysis to identify high-engagement segments

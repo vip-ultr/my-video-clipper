@@ -27,8 +27,8 @@ export function DownloadPathModal({
   isDownloading = false
 }: DownloadPathModalProps) {
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg max-w-2xl w-full mx-4 p-8 shadow-xl">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-3">
+      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto p-5 sm:p-8 shadow-xl">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold">How would you like to download this clip?</h2>
@@ -97,7 +97,7 @@ export function DownloadPathModal({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-4">
+        <div className="flex flex-col sm:flex-row gap-4">
           <Button
             onClick={onDownloadNow}
             disabled={isDownloading}

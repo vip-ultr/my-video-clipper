@@ -89,8 +89,9 @@ export function applyBlur(
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     try {
-      const radius = Math.floor(strength / 5);
-      const filter = `boxblur=${strength}:${radius}`;
+      const clampedStrength = Math.max(0, Math.min(30, Math.round(strength)));
+      const iterations = clampedStrength === 0 ? 0 : Math.max(1, Math.round(clampedStrength / 5));
+      const filter = `boxblur=${clampedStrength}:${iterations}`;
 
       // Use spawn for memory-efficient blur application
       const ffmpegPath = (typeof ffmpegStatic === 'string' ? ffmpegStatic : 'ffmpeg') as string;
