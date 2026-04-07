@@ -433,9 +433,10 @@ export function addWatermark(
       }
 
       // Build filter with watermark scaling and opacity
-      const opacityVal = Math.max(0, Math.min(1, opacity / 100));
-      const watermarkScale = Math.max(0.01, Math.min(0.5, size / 100));
-      const filterComplex = `[1:v]scale=iw*${watermarkScale}:ih*${watermarkScale}[scaled];[0:v][scaled]overlay=${overlayPos}:alpha=${opacityVal}`;
+      // colorchannelmixer=aa= is the correct way to set per-pixel alpha in FFmpeg
+      const opacityVal = Math.max(0, Math.min(1, opacity / 100)).toFixed(3);
+      const watermarkScale = Math.max(0.01, Math.min(0.5, size / 100)).toFixed(4);
+      const filterComplex = `[1:v]scale=iw*${watermarkScale}:ih*${watermarkScale},format=rgba,colorchannelmixer=aa=${opacityVal}[wm];[0:v][wm]overlay=${overlayPos}`;
 
       const ffmpegPath = (typeof ffmpegStatic === 'string' ? ffmpegStatic : 'ffmpeg') as string;
       const args = [

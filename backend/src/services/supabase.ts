@@ -186,6 +186,25 @@ export async function healthCheck(): Promise<boolean> {
   }
 }
 
+// Watermark operations - Upload to Supabase Storage
+export async function uploadWatermarkToStorage(bucket: string, filePath: string, fileBuffer: Buffer, contentType: string): Promise<boolean> {
+  try {
+    const { error } = await supabase.storage
+      .from(bucket)
+      .upload(filePath, fileBuffer, { contentType, upsert: true });
+
+    if (error) {
+      logger.error(`Failed to upload watermark to ${bucket}/${filePath}:`, error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    logger.error(`Error uploading watermark: ${error}`);
+    return false;
+  }
+}
+
 // Watermark operations - Download from Supabase Storage
 export async function downloadWatermarkFromStorage(bucket: string, filePath: string): Promise<Buffer | null> {
   try {

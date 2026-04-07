@@ -1,7 +1,7 @@
 import express, { Request, Response } from 'express';
 import multer from 'multer';
 import fs from 'fs';
-import { saveCustomWatermark, getCustomWatermarks, deleteCustomWatermark } from '../services/supabase.js';
+import { saveCustomWatermark, getCustomWatermarks, deleteCustomWatermark, uploadWatermarkToStorage } from '../services/supabase.js';
 import { config } from '../utils/config.js';
 import { asyncHandler } from '../middleware/validation.js';
 import { logger } from '../utils/logger.js';
@@ -61,11 +61,19 @@ router.post(
 
     if (!success) {
       logger.error('Failed to save watermark metadata');
-      // Clean up uploaded file
-      if (fs.existsSync(req.file.path)) {
-        fs.unlinkSync(req.file.path);
-      }
+      if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
       return res.status(500).json({ error: 'Failed to save watermark' });
+    }
+
+    // Upload to Supabase Storage so processing service can download it
+    const ext = req.file.originalname.split('.').pop() || 'png';
+    const fileBuffer = fs.readFileSync(req.file.path);
+    const storageOk = await uploadWatermarkToStorage('watermarks', `${watermarkId}.${ext}`, fileBuffer, req.file.mimetype);
+
+    if (!storageOk) {
+      logger.error('Failed to upload watermark to Supabase Storage');
+      if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+      return res.status(500).json({ error: 'Failed to store watermark file' });
     }
 
     logger.info(`Watermark uploaded: ${watermarkId}`);

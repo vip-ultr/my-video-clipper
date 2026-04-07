@@ -152,11 +152,17 @@ export async function processClip(settings: ClipSettings): Promise<{ success: bo
           }
         } else if (settings.watermarkId) {
           // Download custom watermark from Supabase Storage
+          // Try common extensions in order since the stored extension may vary
           logger.info(`Downloading custom watermark ${settings.watermarkId} from Supabase Storage...`);
-          const watermarkBuffer = await supabaseService.downloadWatermarkFromStorage('watermarks', `${settings.watermarkId}.png`);
+          let watermarkBuffer: Buffer | null = null;
+          let resolvedExt = 'png';
+          for (const ext of ['png', 'jpg', 'jpeg', 'webp']) {
+            watermarkBuffer = await supabaseService.downloadWatermarkFromStorage('watermarks', `${settings.watermarkId}.${ext}`);
+            if (watermarkBuffer) { resolvedExt = ext; break; }
+          }
 
           if (watermarkBuffer) {
-            tempWatermarkPath = path.join(tempDir, `temp-watermark-${settings.watermarkId}.png`);
+            tempWatermarkPath = path.join(tempDir, `temp-watermark-${settings.watermarkId}.${resolvedExt}`);
             fs.writeFileSync(tempWatermarkPath, watermarkBuffer);
             watermarkImagePath = tempWatermarkPath;
             logger.info(`Custom watermark saved to temporary path: ${watermarkImagePath}`);

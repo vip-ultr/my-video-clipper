@@ -353,6 +353,7 @@ function EditorContent() {
           <BlurControl enabled={blurEnabled} onEnabledChange={setBlurEnabled} strength={blurStrength} onStrengthChange={setBlurStrength} />
           <WatermarkSelector
             watermarkType={watermarkType} onWatermarkTypeChange={setWatermarkType}
+            watermarkId={watermarkId} onWatermarkIdChange={setWatermarkId}
             watermarkPosition={watermarkPosition} onWatermarkPositionChange={setWatermarkPosition}
             watermarkSize={watermarkSize} onWatermarkSizeChange={setWatermarkSize}
             watermarkOpacity={watermarkOpacity} onWatermarkOpacityChange={setWatermarkOpacity}
