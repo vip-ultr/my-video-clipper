@@ -153,35 +153,79 @@ export function burnSubtitles(
   style: string = 'default'
 ): Promise<void> {
   return new Promise((resolve, reject) => {
-    // Subtitle styling options
-    let filter = '';
-    switch (style) {
-      case 'emphasis':
-        filter = `subtitles=${subtitlePath}:fontsize=48:fontcolor=white:borderw=2:bordercolor=black:margin_v=40`;
-        break;
-      case 'rhythm':
-        filter = `subtitles=${subtitlePath}:fontsize=42:fontcolor=white:shadowx=2:shadowy=2:shadowcolor=black:margin_v=40`;
-        break;
-      case 'uniform':
-        filter = `subtitles=${subtitlePath}:fontsize=40:fontcolor=white:margin_v=40`;
-        break;
-      default:
-        filter = `subtitles=${subtitlePath}:fontsize=48:fontcolor=white:borderw=2:bordercolor=black:margin_v=40`;
-    }
+    try {
+      // Build subtitle filter based on style
+      let fontsize = '48';
+      let filterOptions = `fontsize=${fontsize}:fontcolor=white:margin_v=40`;
 
-    ffmpeg(inputPath)
-      .videoFilters(filter)
-      .output(outputPath)
-      .on('start', (commandLine: any) => logger.debug('FFmpeg command:', commandLine))
-      .on('end', () => {
-        logger.info(`Subtitles burned: ${outputPath}`);
-        resolve();
-      })
-      .on('error', (err: any) => {
-        logger.error('Subtitle burn error:', err);
+      switch (style) {
+        case 'emphasis':
+          filterOptions = `fontsize=48:fontcolor=white:borderw=2:bordercolor=black:margin_v=40`;
+          break;
+        case 'rhythm':
+          filterOptions = `fontsize=42:fontcolor=white:shadowx=2:shadowy=2:shadowcolor=black:margin_v=40`;
+          break;
+        case 'uniform':
+          filterOptions = `fontsize=40:fontcolor=white:margin_v=40`;
+          break;
+        default:
+          filterOptions = `fontsize=48:fontcolor=white:borderw=2:bordercolor=black:margin_v=40`;
+      }
+
+      // Use spawn for more reliable FFmpeg control with complex filters
+      const ffmpegPath = (typeof ffmpegStatic === 'string' ? ffmpegStatic : 'ffmpeg') as string;
+      const filter = `subtitles='${subtitlePath}':${filterOptions}`;
+
+      const args = [
+        '-i', inputPath,
+        '-vf', filter,
+        '-c:a', 'aac',
+        '-c:v', 'libx264',
+        '-preset', 'fast',
+        '-y',
+        outputPath
+      ];
+
+      logger.info(`FFmpeg subtitle command: ${ffmpegPath} ${args.join(' ')}`);
+
+      const proc = spawn(ffmpegPath, args);
+      let stderr = '';
+      let stdout = '';
+
+      if (proc.stdout) {
+        proc.stdout.on('data', (data: any) => {
+          stdout += data.toString();
+        });
+      }
+
+      if (proc.stderr) {
+        proc.stderr.on('data', (data: any) => {
+          stderr += data.toString();
+        });
+      }
+
+      proc.on('close', (code: any) => {
+        if (code === 0) {
+          logger.info(`Subtitles burned successfully: ${outputPath}`);
+          resolve();
+        } else {
+          logger.error('Subtitle burn failed:', {
+            exitCode: code,
+            stderr: stderr?.slice(-1000) || '',
+            stdout: stdout?.slice(-500) || ''
+          });
+          reject(new Error(`FFmpeg subtitle burning failed with code ${code}: ${stderr}`));
+        }
+      });
+
+      proc.on('error', (err: any) => {
+        logger.error('Subtitle burn process error:', err);
         reject(err);
-      })
-      .run();
+      });
+    } catch (error) {
+      logger.error('Subtitle filter setup error:', error);
+      reject(error);
+    }
   });
 }
 
