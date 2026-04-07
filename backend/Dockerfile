@@ -1,12 +1,11 @@
-# Use secure Debian-based Node.js image
-FROM node:20-bookworm-slim
+# Use Alpine-based Node.js image (minimal attack surface, fewer vulnerabilities)
+FROM node:22-alpine
 
 # Install FFmpeg and update system packages for security
-RUN apt-get update && apt-get upgrade -y && apt-get install -y \
+RUN apk update && apk upgrade && apk add --no-cache \
     ffmpeg \
     curl \
-    ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+    ca-certificates
 
 # Set working directory
 WORKDIR /app
@@ -27,7 +26,7 @@ RUN npm run build
 RUN mkdir -p /tmp/clips /tmp/watermarks && chmod 755 /tmp/clips /tmp/watermarks
 
 # Create non-root user for security
-RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
+RUN addgroup -S appgroup && adduser -S -u 1000 -G appgroup appuser && chown -R appuser:appgroup /app
 USER appuser
 
 # Set environment
