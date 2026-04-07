@@ -18,18 +18,32 @@ export async function processClip(settings: ClipSettings): Promise<{ success: bo
     // Get original video path
     const video = await supabaseService.getVideo(settings.videoId);
     if (!video) {
-      throw new Error('Video not found');
+      throw new Error('Video not found in database');
+    }
+
+    logger.info(`Video file path: ${video.file_path}`);
+
+    // Check if video file exists
+    if (!fs.existsSync(video.file_path)) {
+      logger.error(`Video file not found at: ${video.file_path}`);
+      throw new Error(`Video file not found at: ${video.file_path}`);
     }
 
     // Step 1: Extract clip
     logger.info('Step 1: Extracting clip...');
     const extractedClipPath = path.join(tempDir, `extracted-${clipFileName}`);
-    await ffmpegService.extractClip(
-      video.file_path,
-      settings.startTime,
-      settings.endTime,
-      extractedClipPath
-    );
+
+    try {
+      await ffmpegService.extractClip(
+        video.file_path,
+        settings.startTime,
+        settings.endTime,
+        extractedClipPath
+      );
+    } catch (ffmpegError) {
+      logger.error('FFmpeg extraction failed:', ffmpegError);
+      throw new Error(`FFmpeg extraction failed: ${ffmpegError instanceof Error ? ffmpegError.message : String(ffmpegError)}`);
+    }
 
     let currentInput = extractedClipPath;
 

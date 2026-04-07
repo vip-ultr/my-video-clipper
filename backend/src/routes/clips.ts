@@ -41,20 +41,29 @@ router.post(
     const result = await processClip(settings);
 
     if (result.success && result.outputPath && result.clipId) {
-      const fileSize = fs.statSync(result.outputPath).size;
-      const fileName = `${settings.projectName}-clip-${settings.clipIndex}.mp4`;
-      const duration = settings.endTime - settings.startTime;
+      try {
+        const fileSize = fs.statSync(result.outputPath).size;
+        const fileName = `${settings.projectName}-clip-${settings.clipIndex}.mp4`;
+        const duration = settings.endTime - settings.startTime;
 
-      res.json({
-        success: true,
-        clip: {
-          id: result.clipId,
-          filename: fileName,
-          fileSize: fileSize,
-          duration: duration
-        }
-      });
+        res.json({
+          success: true,
+          clip: {
+            id: result.clipId,
+            filename: fileName,
+            fileSize: fileSize,
+            duration: duration
+          }
+        });
+      } catch (statError) {
+        logger.error('Failed to get file stats:', statError);
+        res.status(500).json({
+          success: false,
+          error: `Failed to get clip file info: ${statError instanceof Error ? statError.message : 'Unknown error'}`
+        });
+      }
     } else {
+      logger.error('Clip processing failed:', result.error);
       res.status(500).json({
         success: false,
         error: result.error || 'Failed to process clip'

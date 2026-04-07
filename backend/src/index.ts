@@ -63,6 +63,59 @@ app.get('/api/health', async (req, res) => {
   });
 });
 
+// Diagnostic endpoint for debugging
+app.get('/api/diagnostic', async (req, res) => {
+  const { execSync } = await import('child_process');
+  const fs = await import('fs');
+  const diagnostics: any = {
+    timestamp: new Date(),
+    node: process.version,
+    env: config.nodeEnv,
+    paths: {
+      clips: config.paths.clipsDir,
+      watermarks: config.paths.watermarksDir
+    },
+    ffmpeg: { installed: false, version: null },
+    fileSystem: {
+      clipsDir: { exists: false, writable: false },
+      watermarksDir: { exists: false, writable: false }
+    }
+  };
+
+  try {
+    const version = execSync('ffmpeg -version', { timeout: 5000 }).toString().split('\n')[0];
+    diagnostics.ffmpeg.installed = true;
+    diagnostics.ffmpeg.version = version;
+  } catch (e) {
+    diagnostics.ffmpeg.error = 'FFmpeg not found in PATH';
+  }
+
+  // Check directories
+  try {
+    if (fs.existsSync(config.paths.clipsDir)) {
+      diagnostics.fileSystem.clipsDir.exists = true;
+      fs.writeFileSync(`${config.paths.clipsDir}/.test`, 'test');
+      fs.unlinkSync(`${config.paths.clipsDir}/.test`);
+      diagnostics.fileSystem.clipsDir.writable = true;
+    }
+  } catch (e) {
+    diagnostics.fileSystem.clipsDir.error = e instanceof Error ? e.message : 'Unknown error';
+  }
+
+  try {
+    if (fs.existsSync(config.paths.watermarksDir)) {
+      diagnostics.fileSystem.watermarksDir.exists = true;
+      fs.writeFileSync(`${config.paths.watermarksDir}/.test`, 'test');
+      fs.unlinkSync(`${config.paths.watermarksDir}/.test`);
+      diagnostics.fileSystem.watermarksDir.writable = true;
+    }
+  } catch (e) {
+    diagnostics.fileSystem.watermarksDir.error = e instanceof Error ? e.message : 'Unknown error';
+  }
+
+  res.json(diagnostics);
+});
+
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
