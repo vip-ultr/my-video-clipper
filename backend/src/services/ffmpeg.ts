@@ -106,12 +106,12 @@ export function applyBlur(
       const args = [
         '-i', inputPath,
         '-vf', filter,
-        '-c:a', 'copy',
+        '-c:a', 'aac',
+        '-b:a', '128k',
         '-c:v', 'libx264',
         '-preset', 'ultrafast',
-        '-crf', '35',  // Very low quality for intermediate processing to save memory
-        '-maxrate', '1000k',  // Limit bitrate to reduce memory usage
-        '-bufsize', '1000k',
+        '-crf', '23',
+        '-avoid_negative_ts', 'make_zero',
         '-y',
         outputPath
       ];
@@ -187,12 +187,12 @@ export function resizeAspectRatio(
       const args = [
         '-i', inputPath,
         '-vf', filter,
-        '-c:a', 'copy',
+        '-c:a', 'aac',
+        '-b:a', '128k',
         '-c:v', 'libx264',
         '-preset', 'ultrafast',
-        '-crf', '35',  // Very low quality for intermediate processing to save memory
-        '-maxrate', '1000k',  // Limit bitrate to reduce memory usage
-        '-bufsize', '1000k',
+        '-crf', '23',
+        '-avoid_negative_ts', 'make_zero',
         '-y',
         outputPath
       ];
@@ -261,12 +261,12 @@ export function burnSubtitles(
       const args = [
         '-i', inputPath,
         '-vf', filter,
-        '-c:a', 'copy',
+        '-c:a', 'aac',       // Re-encode audio to fix timestamp sync
+        '-b:a', '128k',
         '-c:v', 'libx264',
         '-preset', 'ultrafast',
-        '-crf', '35',  // Low quality for intermediate processing to save memory
-        '-maxrate', '1500k',  // Limit bitrate
-        '-bufsize', '1500k',
+        '-crf', '23',
+        '-avoid_negative_ts', 'make_zero',  // Fix negative timestamps
         '-y',
         outputPath
       ];
@@ -336,13 +336,17 @@ export function encodeVideo(
       const ffmpegPath = (typeof ffmpegStatic === 'string' ? ffmpegStatic : 'ffmpeg') as string;
       const args = [
         '-i', inputPath,
+        '-vf', 'setpts=PTS-STARTPTS',
+        '-af', 'asetpts=PTS-STARTPTS',
         '-c:v', 'libx264',
         '-b:v', bitrate,
         '-r', String(fps),
+        '-vsync', 'cfr',
         '-c:a', 'aac',
-        '-b:a', '96k',
-        '-preset', 'fast', // Speed up encoding for low-resource environments
-        '-y', // Overwrite output file
+        '-b:a', '128k',
+        '-preset', 'fast',
+        '-avoid_negative_ts', 'make_zero',
+        '-y',
         outputPath
       ];
 
@@ -443,12 +447,12 @@ export function addWatermark(
         '-i', inputPath,
         '-i', watermarkPath,
         '-filter_complex', filterComplex,
-        '-c:a', 'copy',
+        '-c:a', 'aac',
+        '-b:a', '128k',
         '-c:v', 'libx264',
         '-preset', 'ultrafast',
-        '-crf', '35',  // Low quality for intermediate processing to save memory
-        '-maxrate', '1500k',  // Limit bitrate
-        '-bufsize', '1500k',
+        '-crf', '23',
+        '-avoid_negative_ts', 'make_zero',
         '-y',
         outputPath
       ];
