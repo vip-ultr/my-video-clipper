@@ -98,12 +98,14 @@ export function applyBlur(
         return;
       }
 
-      // TikTok-style blurred background effect:
-      // Split into two streams — blur + scale background to 1080x1920,
-      // scale foreground to fit inside, then overlay centred on top.
+      // TikTok-style blurred background effect.
+      // Background is scaled down to 1/3 resolution before blurring so boxblur
+      // runs on a 360x640 frame instead of 1080x1920 — ~9x fewer pixels, no OOM.
+      // The scale-back-up pass also contributes to the blurred look.
+      const blurRadius = Math.max(3, Math.round(sigma * 0.6));
       const filterComplex = [
         '[0:v]split=2[bg][fg]',
-        `[bg]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,gblur=sigma=${sigma}[blurred]`,
+        `[bg]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,scale=iw/3:ih/3,boxblur=${blurRadius}:2,scale=1080:1920[blurred]`,
         '[fg]scale=1080:-1[front]',
         '[blurred][front]overlay=(W-w)/2:(H-h)/2[out]'
       ].join(';');
