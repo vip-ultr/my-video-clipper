@@ -1,6 +1,7 @@
 import ffmpeg from 'fluent-ffmpeg';
 import ffmpegStatic from 'ffmpeg-static';
 import { spawn } from 'child_process';
+import fs from 'fs';
 import { logger } from '../utils/logger.js';
 
 // Set FFmpeg path - use ffmpeg-static if available, otherwise rely on system PATH
@@ -90,7 +91,14 @@ export function applyBlur(
   return new Promise((resolve, reject) => {
     try {
       const clampedStrength = Math.max(0, Math.min(30, Math.round(strength)));
-      const iterations = clampedStrength === 0 ? 0 : Math.max(1, Math.round(clampedStrength / 5));
+      if (clampedStrength === 0) {
+        logger.info('Blur strength resolved to 0, skipping blur FFmpeg step and copying input to output');
+        fs.copyFileSync(inputPath, outputPath);
+        resolve();
+        return;
+      }
+
+      const iterations = Math.max(1, Math.round(clampedStrength / 5));
       const filter = `boxblur=${clampedStrength}:${iterations}`;
 
       // Use spawn for memory-efficient blur application
