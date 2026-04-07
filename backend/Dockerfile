@@ -1,5 +1,5 @@
 # Use official Node.js image with FFmpeg support
-FROM node:22-slim
+FROM node:20-alpine
 
 # Install FFmpeg and other required tools
 RUN apt-get update && apt-get install -y \
