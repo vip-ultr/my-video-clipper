@@ -493,6 +493,30 @@ export function addWatermark(
   });
 }
 
+export function extractAudio(inputPath: string, outputPath: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const ffmpegPath = (typeof ffmpegStatic === 'string' ? ffmpegStatic : 'ffmpeg') as string;
+    const args = [
+      '-i', inputPath,
+      '-vn',          // no video stream
+      '-ar', '16000', // 16 kHz — Whisper requirement
+      '-ac', '1',     // mono
+      '-f', 'wav',
+      '-y',
+      outputPath
+    ];
+
+    const proc = spawn(ffmpegPath, args);
+    let stderr = '';
+    proc.stderr?.on('data', (d: any) => { stderr += d.toString(); });
+    proc.on('close', (code: any) => {
+      if (code === 0) resolve();
+      else reject(new Error(`Audio extraction failed (code ${code}): ${stderr.slice(-200)}`));
+    });
+    proc.on('error', reject);
+  });
+}
+
 export function getVideoDuration(inputPath: string): Promise<number> {
   return new Promise((resolve, reject) => {
     ffmpeg.ffprobe(inputPath, (err: any, metadata: any) => {

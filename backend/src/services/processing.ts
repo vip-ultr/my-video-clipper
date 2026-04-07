@@ -91,11 +91,12 @@ export async function processClip(settings: ClipSettings): Promise<{ success: bo
       let subtitleFilePath: string | null = null;
 
       try {
-        // Generate subtitle file (using mock for now, will use Whisper in production)
-        subtitleFilePath = subtitleService.generateMockSubtitles(
+        subtitleFilePath = await subtitleService.generateSubtitles(
+          currentInput,
           settings.startTime,
           settings.endTime,
-          tempDir
+          tempDir,
+          config.huggingface.apiKey || undefined
         );
 
         if (subtitleFilePath && fs.existsSync(subtitleFilePath)) {
