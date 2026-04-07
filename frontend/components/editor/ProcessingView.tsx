@@ -63,9 +63,9 @@ export function ProcessingView({ videoId, onClipsReady }: ProcessingViewProps) {
               watermarkPosition: 'bottom-right',
               watermarkSize: 20,
               watermarkOpacity: 80,
-              aspectRatio: '9:16',
-              quality: 'low', // Use low quality for faster processing
-              fps: 24 // Use lower FPS for faster processing
+              aspectRatio: '1:1', // Use square (less processing) instead of 9:16
+              quality: 'low', // Use low quality (1000k bitrate)
+              fps: 20 // Lower FPS to reduce memory usage
             });
 
             if (response.data.success && response.data.clip) {

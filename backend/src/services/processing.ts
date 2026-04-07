@@ -62,12 +62,21 @@ export async function processClip(settings: ClipSettings): Promise<{ success: bo
       currentInput = blurredPath;
     }
 
-    // Step 3: Adjust aspect ratio
-    logger.info('Step 3: Adjusting aspect ratio...');
-    const resizedPath = path.join(tempDir, `resized-${clipFileName}`);
-    await ffmpegService.resizeAspectRatio(currentInput, settings.aspectRatio, resizedPath);
-    fs.unlinkSync(currentInput);
-    currentInput = resizedPath;
+    // Step 3: Adjust aspect ratio (skip if 1:1 to reduce memory usage)
+    if (settings.aspectRatio !== '1:1') {
+      logger.info('Step 3: Adjusting aspect ratio...');
+      const resizedPath = path.join(tempDir, `resized-${clipFileName}`);
+      try {
+        await ffmpegService.resizeAspectRatio(currentInput, settings.aspectRatio, resizedPath);
+        fs.unlinkSync(currentInput);
+        currentInput = resizedPath;
+      } catch (resizeError) {
+        logger.warn('Aspect ratio adjustment failed, continuing without resize:', resizeError);
+        // Continue with original aspect ratio to avoid memory issues
+      }
+    } else {
+      logger.info('Step 3: Skipping aspect ratio adjustment (1:1 mode)');
+    }
 
     // Step 4: Add watermark if specified
     if (settings.watermarkType && settings.watermarkType !== 'none') {
