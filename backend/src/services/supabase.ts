@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
-import { config } from '../utils/config';
-import { Video, Clip, CustomWatermark } from '../types/index';
-import { logger } from '../utils/logger';
+import { config } from '../utils/config.js';
+import { Video, Clip, CustomWatermark } from '../types/index.js';
+import { logger } from '../utils/logger.js';
 
 const supabase = createClient(
   config.supabase.url,

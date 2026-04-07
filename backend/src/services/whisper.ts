@@ -1,4 +1,4 @@
-import { logger } from '../utils/logger';
+import { logger } from '../utils/logger.js';
 
 // Mock implementation for Whisper transcription
 // In production, you would use the actual faster-whisper-node library

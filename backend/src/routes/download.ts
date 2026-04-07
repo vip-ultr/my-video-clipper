@@ -1,9 +1,9 @@
 import express, { Request, Response } from 'express';
 import fs from 'fs';
 import path from 'path';
-import { getClip, updateClip } from '../services/supabase';
-import { asyncHandler } from '../middleware/validation';
-import { logger } from '../utils/logger';
+import { getClip, updateClip } from '../services/supabase.js';
+import { asyncHandler } from '../middleware/validation.js';
+import { logger } from '../utils/logger.js';
 
 const router = express.Router();
 

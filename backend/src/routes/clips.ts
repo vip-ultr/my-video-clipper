@@ -1,9 +1,9 @@
 import express, { Request, Response } from 'express';
-import { asyncHandler, validateClipSettings } from '../middleware/validation';
-import { processClip } from '../services/processing';
-import { getClips } from '../services/supabase';
-import { logger } from '../utils/logger';
-import { ClipSettings } from '../types/index';
+import { asyncHandler, validateClipSettings } from '../middleware/validation.js';
+import { processClip } from '../services/processing.js';
+import { getClips } from '../services/supabase.js';
+import { logger } from '../utils/logger.js';
+import { ClipSettings } from '../types/index.js';
 
 const router = express.Router();
 

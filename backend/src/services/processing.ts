@@ -1,10 +1,10 @@
-import { ClipSettings } from '../types/index';
-import * as ffmpegService from './ffmpeg';
-import * as supabaseService from './supabase';
-import { logger } from '../utils/logger';
+import { ClipSettings } from '../types/index.js';
+import * as ffmpegService from './ffmpeg.js';
+import * as supabaseService from './supabase.js';
+import { logger } from '../utils/logger.js';
 import fs from 'fs';
 import path from 'path';
-import { config } from '../utils/config';
+import { config } from '../utils/config.js';
 
 export async function processClip(settings: ClipSettings): Promise<{ success: boolean; outputPath?: string; error?: string }> {
   const tempDir = config.paths.clipsDir;

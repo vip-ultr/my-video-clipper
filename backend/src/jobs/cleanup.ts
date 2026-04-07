@@ -1,6 +1,6 @@
-import { config } from '../utils/config';
-import * as storageService from '../services/storage';
-import { logger } from '../utils/logger';
+import { config } from '../utils/config.js';
+import * as storageService from '../services/storage.js';
+import { logger } from '../utils/logger.js';
 
 const CLEANUP_INTERVAL = 30 * 60 * 1000; // Every 30 minutes
 const FILE_AGE_HOURS = 1; // Delete files older than 1 hour

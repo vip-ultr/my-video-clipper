@@ -2,16 +2,16 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 
-import uploadRouter from './routes/upload';
-import watermarkRouter from './routes/watermark';
-import clipsRouter from './routes/clips';
-import downloadRouter from './routes/download';
-import processingRouter from './routes/processing';
-import { errorHandler } from './middleware/errorHandler';
-import { startCleanupJob } from './jobs/cleanup';
-import { config, ensureDirectories, validateConfig } from './utils/config';
-import { logger } from './utils/logger';
-import { healthCheck } from './services/supabase';
+import uploadRouter from './routes/upload.js';
+import watermarkRouter from './routes/watermark.js';
+import clipsRouter from './routes/clips.js';
+import downloadRouter from './routes/download.js';
+import processingRouter from './routes/processing.js';
+import { errorHandler } from './middleware/errorHandler.js';
+import { startCleanupJob } from './jobs/cleanup.js';
+import { config, ensureDirectories, validateConfig } from './utils/config.js';
+import { logger } from './utils/logger.js';
+import { healthCheck } from './services/supabase.js';
 
 dotenv.config();
 

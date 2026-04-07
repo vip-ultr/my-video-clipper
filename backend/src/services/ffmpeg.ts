@@ -1,9 +1,9 @@
 import ffmpeg from 'fluent-ffmpeg';
 import ffmpegStatic from 'ffmpeg-static';
-import { logger } from '../utils/logger';
+import { logger } from '../utils/logger.js';
 
 if (ffmpegStatic) {
-  ffmpeg.setFfmpegPath(ffmpegStatic);
+  ffmpeg.setFfmpegPath(ffmpegStatic as unknown as string);
 }
 
 export function extractClip(

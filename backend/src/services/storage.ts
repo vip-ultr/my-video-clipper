@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
-import { logger } from '../utils/logger';
-import { config } from '../utils/config';
+import { logger } from '../utils/logger.js';
+import { config } from '../utils/config.js';
 
 export function ensureDirectory(dirPath: string): boolean {
   try {

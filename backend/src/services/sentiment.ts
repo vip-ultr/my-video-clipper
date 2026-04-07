@@ -1,6 +1,6 @@
 import axios from 'axios';
-import { logger } from '../utils/logger';
-import { config } from '../utils/config';
+import { logger } from '../utils/logger.js';
+import { config } from '../utils/config.js';
 
 export async function analyzeSentiment(text: string): Promise<number> {
   try {

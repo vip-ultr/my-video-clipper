@@ -1,11 +1,11 @@
 import express, { Request, Response } from 'express';
 import multer from 'multer';
 import fs from 'fs';
-import { saveCustomWatermark, getCustomWatermarks, deleteCustomWatermark } from '../services/supabase';
-import { config } from '../utils/config';
-import { asyncHandler } from '../middleware/validation';
-import { logger } from '../utils/logger';
-import { generateUUID } from '../utils/helpers';
+import { saveCustomWatermark, getCustomWatermarks, deleteCustomWatermark } from '../services/supabase.js';
+import { config } from '../utils/config.js';
+import { asyncHandler } from '../middleware/validation.js';
+import { logger } from '../utils/logger.js';
+import { generateUUID } from '../utils/helpers.js';
 
 const router = express.Router();
 

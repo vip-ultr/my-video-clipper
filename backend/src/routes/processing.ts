@@ -1,9 +1,9 @@
 import express, { Request, Response } from 'express';
-import { getVideo, getClips } from '../services/supabase';
-import { asyncHandler } from '../middleware/validation';
-import { logger } from '../utils/logger';
-import { transcribeAudio } from '../services/whisper';
-import { analyzeSegmentSentiment } from '../services/sentiment';
+import { getVideo, getClips } from '../services/supabase.js';
+import { asyncHandler } from '../middleware/validation.js';
+import { logger } from '../utils/logger.js';
+import { transcribeAudio } from '../services/whisper.js';
+import { analyzeSegmentSentiment } from '../services/sentiment.js';
 
 const router = express.Router();
 

@@ -2,11 +2,11 @@ import express, { Request, Response } from 'express';
 import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
-import { saveVideo } from '../services/supabase';
-import { getVideoDuration } from '../services/ffmpeg';
-import { config } from '../utils/config';
-import { asyncHandler } from '../middleware/validation';
-import { logger } from '../utils/logger';
+import { saveVideo } from '../services/supabase.js';
+import { getVideoDuration } from '../services/ffmpeg.js';
+import { config } from '../utils/config.js';
+import { asyncHandler } from '../middleware/validation.js';
+import { logger } from '../utils/logger.js';
 
 const router = express.Router();
 
