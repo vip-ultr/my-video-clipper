@@ -90,27 +90,34 @@ export function applyBlur(
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     try {
-      const clampedStrength = Math.max(0, Math.min(30, Math.round(strength)));
-      if (clampedStrength === 0) {
-        logger.info('Blur strength resolved to 0, skipping blur FFmpeg step and copying input to output');
+      const sigma = Math.max(0, Math.min(50, Math.round(strength)));
+      if (sigma === 0) {
+        logger.info('Blur strength 0 — copying input to output unchanged');
         fs.copyFileSync(inputPath, outputPath);
         resolve();
         return;
       }
 
-      const iterations = Math.max(1, Math.round(clampedStrength / 5));
-      const filter = `boxblur=${clampedStrength}:${iterations}`;
+      // TikTok-style blurred background effect:
+      // Split into two streams — blur + scale background to 1080x1920,
+      // scale foreground to fit inside, then overlay centred on top.
+      const filterComplex = [
+        '[0:v]split=2[bg][fg]',
+        `[bg]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,gblur=sigma=${sigma}[blurred]`,
+        '[fg]scale=1080:-1[front]',
+        '[blurred][front]overlay=(W-w)/2:(H-h)/2[out]'
+      ].join(';');
 
-      // Use spawn for memory-efficient blur application
       const ffmpegPath = (typeof ffmpegStatic === 'string' ? ffmpegStatic : 'ffmpeg') as string;
       const args = [
         '-i', inputPath,
-        '-vf', filter,
-        '-c:a', 'aac',
-        '-b:a', '128k',
+        '-filter_complex', filterComplex,
+        '-map', '[out]',
+        '-map', '0:a?',
         '-c:v', 'libx264',
         '-preset', 'ultrafast',
         '-crf', '23',
+        '-c:a', 'copy',
         '-avoid_negative_ts', 'make_zero',
         '-y',
         outputPath
@@ -122,20 +129,15 @@ export function applyBlur(
       let stderr = '';
 
       if (proc.stderr) {
-        proc.stderr.on('data', (data: any) => {
-          stderr += data.toString();
-        });
+        proc.stderr.on('data', (data: any) => { stderr += data.toString(); });
       }
 
       proc.on('close', (code: any) => {
         if (code === 0) {
-          logger.info(`Blur applied: ${outputPath}`);
+          logger.info(`Blur applied (sigma=${sigma}): ${outputPath}`);
           resolve();
         } else {
-          logger.error('Blur error:', {
-            exitCode: code,
-            stderr: stderr?.slice(-500) || ''
-          });
+          logger.error('Blur error:', { exitCode: code, stderr: stderr?.slice(-500) || '' });
           reject(new Error(`FFmpeg blur failed with code ${code}`));
         }
       });
