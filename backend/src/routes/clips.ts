@@ -1,4 +1,5 @@
 import express, { Request, Response } from 'express';
+import fs from 'fs';
 import { asyncHandler, validateClipSettings } from '../middleware/validation.js';
 import { processClip } from '../services/processing.js';
 import { getClips } from '../services/supabase.js';
@@ -39,11 +40,19 @@ router.post(
 
     const result = await processClip(settings);
 
-    if (result.success) {
+    if (result.success && result.outputPath && result.clipId) {
+      const fileSize = fs.statSync(result.outputPath).size;
+      const fileName = `${settings.projectName}-clip-${settings.clipIndex}.mp4`;
+      const duration = settings.endTime - settings.startTime;
+
       res.json({
         success: true,
-        clipId: `clip-${Date.now()}`,
-        outputPath: result.outputPath
+        clip: {
+          id: result.clipId,
+          filename: fileName,
+          fileSize: fileSize,
+          duration: duration
+        }
       });
     } else {
       res.status(500).json({

@@ -54,6 +54,7 @@ function EditorContent() {
   } = useEditor();
 
   const [createdClip, setCreatedClip] = useState<any>(null);
+  const [clipId, setClipId] = useState<string | null>(null);
   const [clipIndex, setClipIndex] = useState(0);
 
   // Get clip timing from URL params
@@ -75,6 +76,7 @@ function EditorContent() {
     );
 
     if (result && result.clip) {
+      setClipId(result.clip.id);
       setCreatedClip({
         clipName: result.clip.filename,
         fileSize: `${(result.clip.fileSize / 1024 / 1024).toFixed(2)}MB`,
@@ -97,15 +99,16 @@ function EditorContent() {
         fileSize={createdClip.fileSize}
         duration={createdClip.duration}
         onDownload={() => {
-          const clipId = createdClip.clipName.split('.')[0];
           window.location.href = `/api/download/${clipId}`;
         }}
         onEditAgain={() => {
           setCreatedClip(null);
+          setClipId(null);
           setClipIndex(clipIndex + 1);
         }}
         onNextClip={() => {
           setCreatedClip(null);
+          setClipId(null);
         }}
       />
     );

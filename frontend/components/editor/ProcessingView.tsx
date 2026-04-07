@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation';
 import { Loader2, AlertCircle, CheckCircle2, Brain, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ClipSuggestions } from '@/components/processing/ClipSuggestions';
+import { ClipsReadyView, ReadyClip } from '@/components/editor/ClipsReadyView';
+import { useUploadStore } from '@/store/uploadStore';
+import * as api from '@/lib/api';
 import { Clip } from '@/types';
 
 interface ProcessingViewProps {
@@ -14,15 +17,79 @@ interface ProcessingViewProps {
 
 export function ProcessingView({ videoId, onClipsReady }: ProcessingViewProps) {
   const router = useRouter();
-  const [status, setStatus] = useState<'analyzing' | 'generating' | 'ready' | 'error'>('analyzing');
+  const { clipCount, projectName } = useUploadStore();
+  const [status, setStatus] = useState<'analyzing' | 'generating' | 'creating-clips' | 'ready' | 'error'>('analyzing');
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [clips, setClips] = useState<Clip[]>([]);
+  const [generatedClips, setGeneratedClips] = useState<ReadyClip[]>([]);
   const [steps, setSteps] = useState({
     transcription: false,
     sentiment: false,
-    generation: false
+    generation: false,
+    creation: false
   });
+
+  const createClipsAutomatically = async (suggestedClips: Clip[]) => {
+    try {
+      const clipsToCreate = suggestedClips.slice(0, clipCount);
+      const created: ReadyClip[] = [];
+
+      for (let i = 0; i < clipsToCreate.length; i++) {
+        const clip = clipsToCreate[i];
+        const clipIndex = i;
+
+        try {
+          const response = await api.createClip({
+            videoId,
+            clipIndex,
+            startTime: clip.startTime,
+            endTime: clip.endTime,
+            projectName,
+            subtitlesEnabled: false,
+            subtitleStyle: 'classic',
+            subtitlePrimaryColor: '#FFFFFF',
+            subtitleSecondaryColor: '#999999',
+            subtitlePosition: 'bottom',
+            blurEnabled: false,
+            blurStrength: 15,
+            watermarkType: 'none',
+            watermarkPosition: 'bottom-right',
+            watermarkSize: 20,
+            watermarkOpacity: 80,
+            aspectRatio: '9:16',
+            quality: 'medium',
+            fps: 30
+          });
+
+          if (response.data.success && response.data.clip) {
+            created.push({
+              id: response.data.clip.id,
+              index: clipIndex + 1,
+              filename: response.data.clip.filename,
+              fileSize: response.data.clip.fileSize,
+              duration: response.data.clip.duration
+            });
+          }
+
+          // Update progress
+          const clipProgress = ((i + 1) / clipsToCreate.length) * 30;
+          setProgress(70 + clipProgress);
+        } catch (err) {
+          console.error(`Failed to create clip ${i + 1}:`, err);
+        }
+      }
+
+      setGeneratedClips(created);
+      setSteps(prev => ({ ...prev, creation: true }));
+      setStatus('ready');
+      setProgress(100);
+    } catch (err) {
+      console.error('Error creating clips:', err);
+      setError('Failed to create some clips');
+      setStatus('error');
+    }
+  };
 
   useEffect(() => {
     const analyzeVideo = async () => {
@@ -64,9 +131,9 @@ export function ProcessingView({ videoId, onClipsReady }: ProcessingViewProps) {
 
             setTimeout(() => {
               clearInterval(generationInterval);
-              setProgress(100);
+              setProgress(70);
               setSteps(prev => ({ ...prev, generation: true }));
-              setStatus('ready');
+              setStatus('creating-clips');
 
               // Mock clips
               const mockClips: Clip[] = [
@@ -74,12 +141,21 @@ export function ProcessingView({ videoId, onClipsReady }: ProcessingViewProps) {
                 { id: 2, startTime: 60, endTime: 90, duration: 30, sentiment: 'high' },
                 { id: 3, startTime: 120, endTime: 150, duration: 30, sentiment: 'medium' },
                 { id: 4, startTime: 200, endTime: 230, duration: 30, sentiment: 'high' },
-                { id: 5, startTime: 280, endTime: 310, duration: 30, sentiment: 'medium' }
+                { id: 5, startTime: 280, endTime: 310, duration: 30, sentiment: 'medium' },
+                { id: 6, startTime: 350, endTime: 380, duration: 30, sentiment: 'high' },
+                { id: 7, startTime: 420, endTime: 450, duration: 30, sentiment: 'medium' },
+                { id: 8, startTime: 500, endTime: 530, duration: 30, sentiment: 'high' },
+                { id: 9, startTime: 600, endTime: 630, duration: 30, sentiment: 'high' },
+                { id: 10, startTime: 700, endTime: 730, duration: 30, sentiment: 'medium' }
               ];
               setClips(mockClips);
               if (onClipsReady) {
                 onClipsReady(mockClips);
               }
+
+              // Auto-create clips based on clipCount
+              setStatus('creating-clips');
+              createClipsAutomatically(mockClips);
             }, 2000);
           }, 3500);
         }, 3000);
@@ -97,22 +173,22 @@ export function ProcessingView({ videoId, onClipsReady }: ProcessingViewProps) {
       start: String(clip.startTime),
       end: String(clip.endTime)
     });
-    window.location.href = `/editor/new?${params.toString()}`;
+    window.location.href = `/editor?${params.toString()}`;
   };
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-12">
-      {(status === 'analyzing' || status === 'generating') && (
+      {(status === 'analyzing' || status === 'generating' || status === 'creating-clips') && (
         <>
           <div className="text-center mb-12">
             <Loader2 className="w-16 h-16 mx-auto mb-6 animate-spin text-black" />
             <h1 className="text-3xl font-bold mb-2">
-              {status === 'analyzing' ? 'Analyzing Your Video' : 'Generating Clips'}
+              {status === 'analyzing' ? 'Analyzing Your Video' : status === 'generating' ? 'Generating Clips' : 'Creating Clips'}
             </h1>
             <p className="text-gray-600 mb-8">
               {status === 'analyzing'
                 ? 'Our AI is analyzing your video for high-engagement moments...'
-                : 'Creating suggested clips based on sentiment analysis...'}
+                : status === 'generating' ? 'Creating suggested clips based on sentiment analysis...' : `Creating ${clipCount} video clips...`}
             </p>
           </div>
 
@@ -181,6 +257,25 @@ export function ProcessingView({ videoId, onClipsReady }: ProcessingViewProps) {
               </div>
               {steps.generation && <span className="text-xs text-gray-500">Complete</span>}
             </div>
+
+            <div className={`p-4 border rounded-lg flex items-center gap-3 transition ${
+              steps.creation ? 'border-black bg-gray-50' : 'border-gray-200'
+            }`}>
+              {steps.creation ? (
+                <CheckCircle2 className="w-5 h-5 text-black flex-shrink-0" />
+              ) : status === 'creating-clips' ? (
+                <Loader2 className="w-5 h-5 text-gray-400 animate-spin flex-shrink-0" />
+              ) : (
+                <div className="w-5 h-5 flex-shrink-0 text-gray-300">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+              )}
+              <div className="flex-1">
+                <p className="font-semibold text-sm">Clips Creation</p>
+                <p className="text-xs text-gray-600">Creating {clipCount} video clips</p>
+              </div>
+              {steps.creation && <span className="text-xs text-gray-500">Complete</span>}
+            </div>
           </div>
 
           {/* Tips */}
@@ -193,18 +288,27 @@ export function ProcessingView({ videoId, onClipsReady }: ProcessingViewProps) {
         </>
       )}
 
-      {status === 'ready' && clips.length > 0 && (
-        <>
-          <div className="text-center mb-8">
-            <CheckCircle2 className="w-16 h-16 mx-auto mb-6 text-black" />
-            <h1 className="text-3xl font-bold mb-2">Clips Ready!</h1>
-            <p className="text-gray-600 mb-8">
-              We found {clips.length} moments in your video. Select one to edit and customize.
-            </p>
-          </div>
-
-          <ClipSuggestions clips={clips} onSelectClip={handleSelectClip} />
-        </>
+      {status === 'ready' && generatedClips.length > 0 && (
+        <ClipsReadyView
+          clips={generatedClips}
+          projectName={projectName}
+          onDownloadAll={() => {
+            generatedClips.forEach(clip => {
+              window.location.href = `/api/download/${clip.id}`;
+            });
+          }}
+          onDownload={(clipId) => {
+            window.location.href = `/api/download/${clipId}`;
+          }}
+          onEdit={(clipId, index) => {
+            // Find the clip to get its timing
+            const clip = generatedClips.find(c => c.id === clipId);
+            if (clip) {
+              // For now, just go back to edit for re-customization
+              router.push(`/editor?clipId=${clipId}`);
+            }
+          }}
+        />
       )}
 
       {status === 'error' && (

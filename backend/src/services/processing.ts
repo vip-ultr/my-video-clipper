@@ -6,8 +6,9 @@ import fs from 'fs';
 import path from 'path';
 import { config } from '../utils/config.js';
 
-export async function processClip(settings: ClipSettings): Promise<{ success: boolean; outputPath?: string; error?: string }> {
+export async function processClip(settings: ClipSettings): Promise<{ success: boolean; outputPath?: string; clipId?: string; error?: string }> {
   const tempDir = config.paths.clipsDir;
+  const clipId = `clip-${Date.now()}`;
   const clipFileName = `${Date.now()}-${settings.clipIndex}.mp4`;
   let outputPath = path.join(tempDir, clipFileName);
 
@@ -84,7 +85,7 @@ export async function processClip(settings: ClipSettings): Promise<{ success: bo
     // Save clip record to database
     logger.info('Saving clip to database...');
     const clipData = {
-      id: `clip-${Date.now()}`,
+      id: clipId,
       video_id: settings.videoId,
       project_name: settings.projectName,
       clip_index: settings.clipIndex,
@@ -121,7 +122,8 @@ export async function processClip(settings: ClipSettings): Promise<{ success: bo
     logger.info(`Clip processing completed: ${outputPath}`);
     return {
       success: true,
-      outputPath
+      outputPath,
+      clipId
     };
   } catch (error) {
     logger.error('Clip processing failed:', error);
