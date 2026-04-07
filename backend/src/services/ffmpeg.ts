@@ -88,22 +88,55 @@ export function applyBlur(
   outputPath: string
 ): Promise<void> {
   return new Promise((resolve, reject) => {
-    const radius = Math.floor(strength / 5);
-    const filter = `boxblur=${strength}:${radius}`;
+    try {
+      const radius = Math.floor(strength / 5);
+      const filter = `boxblur=${strength}:${radius}`;
 
-    ffmpeg(inputPath)
-      .videoFilters(filter)
-      .output(outputPath)
-      .on('start', (commandLine: any) => logger.debug('FFmpeg command:', commandLine))
-      .on('end', () => {
-        logger.info(`Blur applied: ${outputPath}`);
-        resolve();
-      })
-      .on('error', (err: any) => {
-        logger.error('Blur error:', err);
+      // Use spawn for memory-efficient blur application
+      const ffmpegPath = (typeof ffmpegStatic === 'string' ? ffmpegStatic : 'ffmpeg') as string;
+      const args = [
+        '-i', inputPath,
+        '-vf', filter,
+        '-c:a', 'copy',
+        '-c:v', 'libx264',
+        '-preset', 'ultrafast',
+        '-crf', '28',
+        '-y',
+        outputPath
+      ];
+
+      logger.info(`FFmpeg blur command: ${ffmpegPath} ${args.join(' ')}`);
+
+      const proc = spawn(ffmpegPath, args);
+      let stderr = '';
+
+      if (proc.stderr) {
+        proc.stderr.on('data', (data: any) => {
+          stderr += data.toString();
+        });
+      }
+
+      proc.on('close', (code: any) => {
+        if (code === 0) {
+          logger.info(`Blur applied: ${outputPath}`);
+          resolve();
+        } else {
+          logger.error('Blur error:', {
+            exitCode: code,
+            stderr: stderr?.slice(-500) || ''
+          });
+          reject(new Error(`FFmpeg blur failed with code ${code}`));
+        }
+      });
+
+      proc.on('error', (err: any) => {
+        logger.error('Blur process error:', err);
         reject(err);
-      })
-      .run();
+      });
+    } catch (error) {
+      logger.error('Blur setup error:', error);
+      reject(error);
+    }
   });
 }
 
