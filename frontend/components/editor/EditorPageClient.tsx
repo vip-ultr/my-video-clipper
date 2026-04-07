@@ -72,7 +72,8 @@ function EditorContent() {
       startTime,
       endTime,
       clipIndex,
-      projectName
+      projectName,
+      clipIndex > 0 // Pass true if this is an edit (clipIndex > 0 means it's been edited before)
     );
 
     if (result && result.clip) {

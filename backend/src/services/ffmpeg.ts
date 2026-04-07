@@ -202,36 +202,72 @@ export function encodeVideo(
       const bitrate = bitrates[quality as keyof typeof bitrates] || '2500k';
       logger.info(`Starting video encoding: ${inputPath} -> ${outputPath} (${bitrate}@${fps}fps)`);
 
-      ffmpeg(inputPath)
-        .videoCodec('libx264')
-        .videoBitrate(bitrate)
-        .fps(fps)
-        .output(outputPath)
-        .on('start', (commandLine: any) => {
-          logger.info('FFmpeg encoding started');
-          logger.debug('Full command:', commandLine);
-        })
-        .on('progress', (progress: any) => {
-          if (progress.percent) {
-            logger.debug(`Encoding progress: ${Math.round(progress.percent)}%`);
-          }
-        })
-        .on('end', () => {
+      // Use raw FFmpeg for more reliable encoding
+      // Command: ffmpeg -i input -c:v libx264 -b:v bitrate -r fps -c:a aac -b:a 96k -y output
+      const ffmpegPath = (typeof ffmpegStatic === 'string' ? ffmpegStatic : 'ffmpeg') as string;
+      const args = [
+        '-i', inputPath,
+        '-c:v', 'libx264',
+        '-b:v', bitrate,
+        '-r', String(fps),
+        '-c:a', 'aac',
+        '-b:a', '96k',
+        '-preset', 'fast', // Speed up encoding for low-resource environments
+        '-y', // Overwrite output file
+        outputPath
+      ];
+
+      logger.info(`FFmpeg encoding command: ${ffmpegPath} ${args.join(' ')}`);
+
+      const proc = spawn(ffmpegPath, args);
+      let stderr = '';
+      let stdout = '';
+      let lastProgress = 0;
+
+      if (proc.stdout) {
+        proc.stdout.on('data', (data: any) => {
+          stdout += data.toString();
+          // Log progress periodically
+          const lines = stdout.split('\n');
+          lines.forEach((line: string) => {
+            if (line.includes('frame=')) {
+              // Extract frame number for progress tracking
+              const match = line.match(/frame=\s*(\d+)/);
+              if (match && Date.now() - lastProgress > 5000) {
+                lastProgress = Date.now();
+                logger.debug(`Encoding progress: frame ${match[1]}`);
+              }
+            }
+          });
+        });
+      }
+
+      if (proc.stderr) {
+        proc.stderr.on('data', (data: any) => {
+          stderr += data.toString();
+        });
+      }
+
+      proc.on('close', (code: any) => {
+        if (code === 0) {
           logger.info(`Video encoded successfully: ${outputPath}`);
           resolve();
-        })
-        .on('error', (err: any, stdout: any, stderr: any) => {
+        } else {
           logger.error('Encoding failed:', {
             inputPath,
             outputPath,
-            error: err?.message || String(err),
-            code: (err as any)?.code,
-            stdout: stdout ? stdout.toString().slice(-500) : '',
-            stderr: stderr ? stderr.toString().slice(-500) : ''
+            exitCode: code,
+            stderr: stderr?.slice(-1000) || '',
+            stdout: stdout?.slice(-500) || ''
           });
-          reject(new Error(`FFmpeg encoding failed: ${err?.message || String(err)}`));
-        })
-        .run();
+          reject(new Error(`FFmpeg encoding failed with exit code ${code}: ${stderr.slice(-200)}`));
+        }
+      });
+
+      proc.on('error', (err: any) => {
+        logger.error('Encoding process error:', err);
+        reject(err);
+      });
     } catch (error) {
       logger.error('Encoding setup error:', error);
       reject(error);

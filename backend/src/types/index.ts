@@ -35,6 +35,7 @@ export interface Clip {
   output_file_path: string | null;
   processed: boolean;
   download_count: number;
+  is_edited?: boolean; // Flag for edited clips
   created_at: Date;
   updated_at: Date;
 }
@@ -69,6 +70,7 @@ export interface ClipSettings {
   aspectRatio: string;
   quality: string;
   fps: number;
+  isEdited?: boolean; // Flag to indicate this is an edited version
 }
 
 export interface ProcessingResponse {

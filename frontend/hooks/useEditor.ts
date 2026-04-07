@@ -43,7 +43,7 @@ export function useEditor() {
   } = useEditorStore();
 
   const createClip = useCallback(
-    async (videoId: string, startTime: number, endTime: number, clipIndex: number, projectName: string) => {
+    async (videoId: string, startTime: number, endTime: number, clipIndex: number, projectName: string, isEdited: boolean = false) => {
       try {
         setIsProcessing(true);
         setError(null);
@@ -68,7 +68,8 @@ export function useEditor() {
           watermarkOpacity,
           aspectRatio,
           quality,
-          fps
+          fps,
+          isEdited
         });
 
         if (response.data.success) {

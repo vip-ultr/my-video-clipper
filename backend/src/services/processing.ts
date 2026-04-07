@@ -163,6 +163,7 @@ export async function processClip(settings: ClipSettings): Promise<{ success: bo
       fps: settings.fps,
       output_file_path: outputPath,
       processed: true,
+      is_edited: settings.isEdited || false,
       created_at: new Date(),
       updated_at: new Date()
     };

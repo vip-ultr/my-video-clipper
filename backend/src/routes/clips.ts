@@ -33,7 +33,8 @@ router.post(
       watermarkOpacity: req.body.watermarkOpacity || 80,
       aspectRatio: req.body.aspectRatio || '9:16',
       quality: req.body.quality || 'medium',
-      fps: req.body.fps || 30
+      fps: req.body.fps || 30,
+      isEdited: req.body.isEdited || false
     };
 
     logger.info(`Processing clip: ${settings.clipIndex}`);
@@ -43,7 +44,8 @@ router.post(
     if (result.success && result.outputPath && result.clipId) {
       try {
         const fileSize = fs.statSync(result.outputPath).size;
-        const fileName = `${settings.projectName}-clip-${settings.clipIndex}.mp4`;
+        const editedSuffix = settings.isEdited ? '-edited' : '';
+        const fileName = `${settings.projectName}-clip-${settings.clipIndex}${editedSuffix}.mp4`;
         const duration = settings.endTime - settings.startTime;
 
         res.json({
