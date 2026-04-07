@@ -5,10 +5,11 @@ import { logger } from '../utils/logger.js';
 import fs from 'fs';
 import path from 'path';
 import { config } from '../utils/config.js';
+import { randomUUID } from 'crypto';
 
 export async function processClip(settings: ClipSettings): Promise<{ success: boolean; outputPath?: string; clipId?: string; error?: string }> {
   const tempDir = config.paths.clipsDir;
-  const clipId = `clip-${Date.now()}`;
+  const clipId = randomUUID(); // Generate proper UUID for database
   const clipFileName = `${Date.now()}-${settings.clipIndex}.mp4`;
   let outputPath = path.join(tempDir, clipFileName);
 
