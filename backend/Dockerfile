@@ -1,33 +1,23 @@
-# Use Alpine-based Node.js image (minimal attack surface, fewer vulnerabilities)
-FROM node:20.11.0-alpine3.19
+# Use stable Alpine Node.js image
+FROM node:20-alpine
 
-# Install FFmpeg and update system packages for security
-RUN apk update && apk upgrade && apk add --no-cache \
-    ffmpeg \
-    curl \
-    ca-certificates
+# Install FFmpeg
+RUN apk add --no-cache ffmpeg curl
 
 # Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Copy all files
+COPY . .
 
 # Install dependencies
-RUN npm ci --omit=dev
-
-# Copy source code
-COPY . .
+RUN npm install
 
 # Build TypeScript
 RUN npm run build
 
-# Create required directories with proper permissions
-RUN mkdir -p /tmp/clips /tmp/watermarks && chmod 755 /tmp/clips /tmp/watermarks
-
-# Create non-root user for security
-RUN addgroup -S appgroup && adduser -S -u 1000 -G appgroup appuser && chown -R appuser:appgroup /app
-USER appuser
+# Create required directories
+RUN mkdir -p /tmp/clips /tmp/watermarks
 
 # Set environment
 ENV NODE_ENV=production
@@ -35,10 +25,6 @@ ENV PORT=3001
 
 # Expose port
 EXPOSE 3001
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:3001/api/health || exit 1
 
 # Start application
 CMD ["node", "dist/index.js"]
