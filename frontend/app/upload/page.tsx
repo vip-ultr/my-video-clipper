@@ -64,9 +64,9 @@ export default function UploadPage() {
 
     const success = await uploadVideo();
     if (success) {
-      // Redirect to editor after successful upload
+      // Redirect to processing after successful upload
       setTimeout(() => {
-        router.push('/editor/new');
+        router.push('/processing');
       }, 1000);
     }
   };
