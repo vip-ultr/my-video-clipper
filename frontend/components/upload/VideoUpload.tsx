@@ -8,7 +8,6 @@ interface VideoUploadProps {
   onDrag: (e: React.DragEvent) => void;
   onDrop: (e: React.DragEvent) => void;
   onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onClickUpload: () => void;
   videoFile: File | null;
 }
 
@@ -22,6 +21,10 @@ export function VideoUpload({
 }: VideoUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const handleClick = () => {
+    fileInputRef.current?.click();
+  };
+
   return (
     <div>
       <label className="block text-sm font-medium mb-4">Select Video (Max 1.5GB)</label>
@@ -33,7 +36,7 @@ export function VideoUpload({
         className={`border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition ${
           dragActive ? 'border-black bg-gray-50' : 'border-gray-300 hover:border-gray-400'
         }`}
-        onClick={onClickUpload}
+        onClick={handleClick}
       >
         <input
           ref={fileInputRef}

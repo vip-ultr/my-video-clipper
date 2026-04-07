@@ -11,7 +11,6 @@ import { UploadProgress } from '@/components/upload/UploadProgress';
 
 export default function UploadPage() {
   const router = useRouter();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragActive, setDragActive] = useState(false);
 
   const {
@@ -90,7 +89,6 @@ export default function UploadPage() {
           onDrag={handleDrag}
           onDrop={handleDrop}
           onFileChange={handleFileChange}
-          onClickUpload={() => fileInputRef.current?.click()}
           videoFile={videoFile}
         />
 
