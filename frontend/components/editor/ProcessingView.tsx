@@ -34,59 +34,90 @@ export function ProcessingView({ videoId, onClipsReady }: ProcessingViewProps) {
     try {
       const clipsToCreate = suggestedClips.slice(0, clipCount);
       const created: ReadyClip[] = [];
+      const failed: number[] = [];
 
       for (let i = 0; i < clipsToCreate.length; i++) {
         const clip = clipsToCreate[i];
         const clipIndex = i;
+        let retries = 3;
+        let success = false;
 
-        try {
-          const response = await api.createClip({
-            videoId,
-            clipIndex,
-            startTime: clip.startTime,
-            endTime: clip.endTime,
-            projectName,
-            subtitlesEnabled: false,
-            subtitleStyle: 'classic',
-            subtitlePrimaryColor: '#FFFFFF',
-            subtitleSecondaryColor: '#999999',
-            subtitlePosition: 'bottom',
-            blurEnabled: false,
-            blurStrength: 15,
-            watermarkType: 'none',
-            watermarkPosition: 'bottom-right',
-            watermarkSize: 20,
-            watermarkOpacity: 80,
-            aspectRatio: '9:16',
-            quality: 'medium',
-            fps: 30
-          });
+        while (retries > 0 && !success) {
+          try {
+            console.log(`Creating clip ${i + 1}/${clipsToCreate.length} (attempt ${4 - retries})...`);
 
-          if (response.data.success && response.data.clip) {
-            created.push({
-              id: response.data.clip.id,
-              index: clipIndex + 1,
-              filename: response.data.clip.filename,
-              fileSize: response.data.clip.fileSize,
-              duration: response.data.clip.duration
+            const response = await api.createClip({
+              videoId,
+              clipIndex,
+              startTime: clip.startTime,
+              endTime: clip.endTime,
+              projectName,
+              subtitlesEnabled: false,
+              subtitleStyle: 'classic',
+              subtitlePrimaryColor: '#FFFFFF',
+              subtitleSecondaryColor: '#999999',
+              subtitlePosition: 'bottom',
+              blurEnabled: false,
+              blurStrength: 15,
+              watermarkType: 'none',
+              watermarkPosition: 'bottom-right',
+              watermarkSize: 20,
+              watermarkOpacity: 80,
+              aspectRatio: '9:16',
+              quality: 'low', // Use low quality for faster processing
+              fps: 24 // Use lower FPS for faster processing
             });
-          }
 
-          // Update progress
-          const clipProgress = ((i + 1) / clipsToCreate.length) * 30;
-          setProgress(70 + clipProgress);
-        } catch (err) {
-          console.error(`Failed to create clip ${i + 1}:`, err);
+            if (response.data.success && response.data.clip) {
+              created.push({
+                id: response.data.clip.id,
+                index: clipIndex + 1,
+                filename: response.data.clip.filename,
+                fileSize: response.data.clip.fileSize,
+                duration: response.data.clip.duration
+              });
+              success = true;
+              console.log(`✅ Clip ${i + 1} created successfully`);
+            }
+
+            // Update progress
+            const clipProgress = ((i + 1) / clipsToCreate.length) * 30;
+            setProgress(70 + clipProgress);
+          } catch (err: any) {
+            retries--;
+            if (retries === 0) {
+              console.error(`❌ Failed to create clip ${i + 1} after 3 attempts:`, err.message);
+              failed.push(i + 1);
+            } else {
+              console.warn(`⚠️ Clip ${i + 1} attempt failed, retrying (${retries} left)...`);
+              // Wait before retrying
+              await new Promise(resolve => setTimeout(resolve, 2000));
+            }
+          }
+        }
+
+        // Add delay between clips to avoid overwhelming the server
+        if (i < clipsToCreate.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
         }
       }
 
       setGeneratedClips(created);
       setSteps(prev => ({ ...prev, creation: true }));
-      setStatus('ready');
-      setProgress(100);
+
+      if (created.length > 0) {
+        setStatus('ready');
+        setProgress(100);
+        if (failed.length > 0) {
+          setError(`Created ${created.length} clips, but failed to create clips: ${failed.join(', ')}`);
+        }
+      } else {
+        setStatus('error');
+        setError(`Failed to create any clips. Please try again.`);
+      }
     } catch (err) {
       console.error('Error creating clips:', err);
-      setError('Failed to create some clips');
+      setError('Failed to create clips. Please check your connection and try again.');
       setStatus('error');
     }
   };

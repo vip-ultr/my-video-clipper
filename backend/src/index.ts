@@ -23,6 +23,12 @@ app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
+// Increase request timeout for video processing (5 minutes)
+app.use((req, res, next) => {
+  req.setTimeout(300000);
+  next();
+});
+
 // Initialize
 try {
   logger.info('[STARTUP] Starting server initialization...');
@@ -86,6 +92,9 @@ const server = app.listen(PORT, () => {
 
   logger.info('[SERVER] Startup completed successfully');
 });
+
+// Set timeouts for long-running video processing
+server.setTimeout(300000); // 5 minutes
 
 // Handle server errors
 server.on('error', (error: any) => {
