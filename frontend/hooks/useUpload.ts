@@ -39,7 +39,13 @@ export function useUpload() {
       // Convert clipping mode from store format to backend format
       const backendClippingMode = clippingMode === 'ai-detection' ? 'AI' : 'MANUAL';
 
-      const response = await api.uploadVideo(videoFile, projectName, backendClippingMode, clipCount);
+      const response = await api.uploadVideo(
+        videoFile,
+        projectName,
+        backendClippingMode,
+        clipCount,
+        (percent) => setUploadProgress(percent)
+      );
 
       if (response.data.success) {
         setVideoId(response.data.videoId);

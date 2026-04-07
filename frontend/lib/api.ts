@@ -11,7 +11,13 @@ const apiClient = axios.create({
 });
 
 // Video upload
-export async function uploadVideo(file: File, projectName: string, clippingMode?: string, clipCount?: number) {
+export async function uploadVideo(
+  file: File,
+  projectName: string,
+  clippingMode?: string,
+  clipCount?: number,
+  onProgress?: (percent: number) => void
+) {
   const formData = new FormData();
   formData.append('video', file);
   formData.append('projectName', projectName);
@@ -19,7 +25,12 @@ export async function uploadVideo(file: File, projectName: string, clippingMode?
   if (clipCount) formData.append('clipCount', String(clipCount));
 
   return apiClient.post('/upload', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
+    headers: { 'Content-Type': 'multipart/form-data' },
+    onUploadProgress: (event) => {
+      if (onProgress && event.total) {
+        onProgress(Math.round((event.loaded * 100) / event.total));
+      }
+    }
   });
 }
 
