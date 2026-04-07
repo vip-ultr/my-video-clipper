@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useUpload } from '@/hooks/useUpload';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -69,8 +69,8 @@ export default function UploadPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-12">
-      <h1 className="text-4xl font-bold mb-2">Upload Your Video</h1>
+    <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12">
+      <h1 className="text-3xl sm:text-4xl font-bold mb-2">Upload Your Video</h1>
       <p className="text-gray-600 mb-8">
         Drag and drop your livestream video or click to browse. Max 1.5GB.
       </p>

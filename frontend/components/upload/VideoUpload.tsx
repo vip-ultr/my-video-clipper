@@ -32,7 +32,7 @@ export function VideoUpload({
         onDragLeave={onDrag}
         onDragOver={onDrag}
         onDrop={onDrop}
-        className={`border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition ${
+        className={`border-2 border-dashed rounded-lg p-6 sm:p-12 text-center cursor-pointer transition ${
           dragActive ? 'border-black bg-gray-50' : 'border-gray-300 hover:border-gray-400'
         }`}
         onClick={handleClick}

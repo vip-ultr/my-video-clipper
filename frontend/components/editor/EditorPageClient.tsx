@@ -59,16 +59,25 @@ function EditorContent() {
   const [clipIndex, setClipIndex] = useState(0);
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
 
   // Get clip timing from URL params
   const startTime = parseFloat(searchParams.get('start') || '0');
   const endTime = parseFloat(searchParams.get('end') || String(clipDuration));
+  const queryClipIndex = parseInt(searchParams.get('clipIndex') || '0', 10);
+
+  useEffect(() => {
+    if (!Number.isNaN(queryClipIndex) && queryClipIndex >= 0) {
+      setClipIndex(queryClipIndex);
+    }
+  }, [queryClipIndex]);
 
   const handleCreateClip = async () => {
     if (!videoId) {
-      alert('Video ID not found. Please upload a video first.');
+      setDownloadError('Video ID not found. Please upload a video first.');
       return;
     }
+    setDownloadError(null);
 
     const result = await createClip(
       videoId,
@@ -106,7 +115,7 @@ function EditorContent() {
         downloadProgress={downloadProgress}
         onDownload={async () => {
           if (!clipId) {
-            alert('Clip ID not found');
+            setDownloadError('Clip ID not found.');
             return;
           }
 
@@ -129,10 +138,9 @@ function EditorContent() {
             window.URL.revokeObjectURL(url);
 
             setDownloadProgress(100);
-            console.log('✅ Download complete:', createdClip.clipName);
+            setDownloadError(null);
           } catch (error) {
-            console.error('❌ Download failed:', error);
-            alert('Download failed. Please try again.');
+            setDownloadError(error instanceof Error ? error.message : 'Download failed. Please try again.');
             setDownloadProgress(0);
           } finally {
             setIsDownloading(false);
@@ -154,12 +162,17 @@ function EditorContent() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      <h1 className="text-4xl font-bold mb-8">Edit Clip</h1>
+    <div className="max-w-7xl mx-auto px-4 py-6 sm:py-8">
+      <h1 className="text-3xl sm:text-4xl font-bold mb-8">Edit Clip</h1>
 
       {error && (
         <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded">
           <p className="text-red-800">{error}</p>
+        </div>
+      )}
+      {downloadError && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded">
+          <p className="text-red-800">{downloadError}</p>
         </div>
       )}
 
@@ -219,10 +232,10 @@ function EditorContent() {
       </div>
 
       {/* Action Buttons */}
-      <div className="mt-8 flex gap-4 justify-center">
+      <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
         <Button
           disabled={isProcessing || !videoId}
-          className="bg-black text-white hover:bg-gray-800 h-12 px-8 text-lg"
+          className="bg-black text-white hover:bg-gray-800 h-12 px-8 text-lg w-full sm:w-auto"
           onClick={handleCreateClip}
         >
           {isProcessing ? 'Processing...' : 'Download Clip'}

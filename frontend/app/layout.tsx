@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Navbar } from '@/components/layout/Navbar';
 import '@/styles/globals.css';
 
@@ -6,8 +6,12 @@ export const metadata: Metadata = {
   title: 'My Video Clipper - AI-Powered Livestream Video Clipper',
   description: 'Automatically create short-form clips from your livestreams with AI detection, subtitle styling, blur effects, and watermarks.',
   keywords: ['video', 'clipper', 'ai', 'livestream', 'shorts', 'tiktok'],
-  authors: [{ name: 'My Video Clipper' }],
-  viewport: 'width=device-width, initial-scale=1',
+  authors: [{ name: 'My Video Clipper' }]
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
   colorScheme: 'light'
 };
 

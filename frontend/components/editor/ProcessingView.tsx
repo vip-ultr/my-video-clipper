@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, AlertCircle, CheckCircle2, Brain, Sparkles, Download } from 'lucide-react';
+import { Loader2, AlertCircle, CheckCircle2, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ClipsReadyView, ReadyClip } from '@/components/editor/ClipsReadyView';
 import { ClipSelectionModal } from '@/components/modals/ClipSelectionModal';
@@ -12,7 +12,6 @@ import * as api from '@/lib/api';
 
 interface ProcessingViewProps {
   videoId: string;
-  onClipsReady?: (clips: any[]) => void;
 }
 
 interface ClipSuggestion {
@@ -25,7 +24,7 @@ interface ClipSuggestion {
   reason: string;
 }
 
-export function ProcessingView({ videoId, onClipsReady }: ProcessingViewProps) {
+export function ProcessingView({ videoId }: ProcessingViewProps) {
   const router = useRouter();
   const { clipCount, projectName, clipDuration, clippingMode: storeClippingMode = 'manual-slicing' } = useUploadStore();
 
@@ -45,6 +44,7 @@ export function ProcessingView({ videoId, onClipsReady }: ProcessingViewProps) {
   const [showDownloadPathModal, setShowDownloadPathModal] = useState(false);
   const [selectedClip, setSelectedClip] = useState<ClipSuggestion | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
+  const getErrorMessage = (err: unknown, fallback: string) => err instanceof Error ? err.message : fallback;
 
   // Generate clips based on clipping mode
   useEffect(() => {
@@ -79,21 +79,19 @@ export function ProcessingView({ videoId, onClipsReady }: ProcessingViewProps) {
               throw new Error('Failed to generate clips');
             }
           } catch (err) {
-            console.error('Error generating clips:', err);
-            setError(err instanceof Error ? err.message : 'Failed to generate clips');
+            setError(getErrorMessage(err, 'Failed to generate clips'));
             setStatus('error');
           }
         }, 2000);
 
       } catch (err) {
-        console.error('Error in generateClips:', err);
-        setError(err instanceof Error ? err.message : 'Generation failed');
+        setError(getErrorMessage(err, 'Generation failed'));
         setStatus('error');
       }
     };
 
     generateClips();
-  }, [videoId, clipCount, clippingMode]);
+  }, [videoId, clipCount, clipDuration, clippingMode]);
 
   const handleClipSelection = (clip: ClipSuggestion) => {
     setSelectedClip(clip);
@@ -137,8 +135,7 @@ export function ProcessingView({ videoId, onClipsReady }: ProcessingViewProps) {
         }
       }, 500);
     } catch (err) {
-      console.error('Download failed:', err);
-      setError('Failed to download clip. Please try again.');
+      setError(getErrorMessage(err, 'Failed to download clip. Please try again.'));
       setStatus('error');
     } finally {
       setIsDownloading(false);
@@ -153,7 +150,8 @@ export function ProcessingView({ videoId, onClipsReady }: ProcessingViewProps) {
     const params = new URLSearchParams({
       start: String(selectedClip.startTime),
       end: String(selectedClip.endTime),
-      clipId: selectedClip.id
+      clipId: selectedClip.id,
+      clipIndex: String(selectedClip.index)
     });
     router.push(`/editor?${params.toString()}`);
   };
@@ -280,8 +278,7 @@ export function ProcessingView({ videoId, onClipsReady }: ProcessingViewProps) {
                 document.body.removeChild(a);
                 await new Promise(resolve => setTimeout(resolve, 500));
               } catch (error) {
-                console.error(`Failed to download clip ${clip.id}:`, error);
-                setError(`Failed to download clip ${clip.index}`);
+                setError(`Failed to download clip ${clip.index}: ${getErrorMessage(error, 'Unknown error')}`);
               }
             }
           }}
@@ -298,8 +295,7 @@ export function ProcessingView({ videoId, onClipsReady }: ProcessingViewProps) {
               window.URL.revokeObjectURL(url);
               document.body.removeChild(a);
             } catch (error) {
-              console.error(`Failed to download clip ${clipId}:`, error);
-              setError(`Failed to download the clip. Please try again.`);
+              setError(`Failed to download the clip: ${getErrorMessage(error, 'Unknown error')}`);
             }
           }}
           onEdit={(clipId, index) => {

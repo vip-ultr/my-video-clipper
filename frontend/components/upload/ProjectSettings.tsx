@@ -40,6 +40,7 @@ export function ProjectSettings({
         <label className="block text-sm font-medium mb-2">Clipping Mode</label>
         <div className="grid grid-cols-2 gap-3">
           <button
+            type="button"
             onClick={() => onClippingModeChange('ai-detection')}
             className={`p-3 rounded-lg border-2 transition ${
               clippingMode === 'ai-detection'
@@ -51,6 +52,7 @@ export function ProjectSettings({
             <p className="text-xs">Auto-detect high engagement</p>
           </button>
           <button
+            type="button"
             onClick={() => onClippingModeChange('manual-slicing')}
             className={`p-3 rounded-lg border-2 transition ${
               clippingMode === 'manual-slicing'
@@ -87,6 +89,7 @@ export function ProjectSettings({
           {[15, 30, 40, 60].map((duration) => (
             <button
               key={duration}
+              type="button"
               onClick={() => onClipDurationChange(duration)}
               className={`py-2 px-3 rounded-lg border-2 transition text-sm font-medium ${
                 clipDuration === duration

@@ -20,12 +20,6 @@ export default function ProcessingPageClient() {
   }
 
   return (
-    <ProcessingView
-      videoId={videoId}
-      onClipsReady={(clips) => {
-        // Clips are ready, user will select one from the ProcessingView
-        // Navigation happens when they click a clip
-      }}
-    />
+    <ProcessingView videoId={videoId} />
   );
 }
