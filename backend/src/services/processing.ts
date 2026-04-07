@@ -15,6 +15,12 @@ export async function processClip(settings: ClipSettings): Promise<{ success: bo
   try {
     logger.info(`Starting clip processing: ${settings.clipIndex}`);
 
+    // Ensure temp directory exists
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+      logger.info(`Created temp directory: ${tempDir}`);
+    }
+
     // Get original video path
     const video = await supabaseService.getVideo(settings.videoId);
     if (!video) {

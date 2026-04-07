@@ -39,6 +39,18 @@ try {
 
   validateConfig();
   ensureDirectories();
+
+  // Ensure directories exist and are writable
+  const fs = await import('fs');
+  const path = await import('path');
+
+  [config.paths.clipsDir, config.paths.watermarksDir].forEach(dir => {
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+      logger.info(`[STARTUP] Created directory: ${dir}`);
+    }
+  });
+
   logger.info('[STARTUP] Configuration validated and directories ensured');
 } catch (error) {
   logger.error('[STARTUP] Initialization failed:', error);
