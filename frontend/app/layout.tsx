@@ -29,10 +29,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={inter.variable}>
-      <body className="bg-white text-black font-sans">
+      <body className="bg-white text-black font-sans flex flex-col min-h-screen">
         <Navbar />
         <main className="flex-1">{children}</main>
-        <footer className="border-t border-gray-200 bg-white py-8 mt-16">
+        <footer className="border-t border-gray-200 bg-white py-8 mt-auto">
           <div className="max-w-7xl mx-auto px-4 text-center text-sm text-gray-600">
             <p>&copy; 2026 My Video Clipper. All rights reserved.</p>
           </div>

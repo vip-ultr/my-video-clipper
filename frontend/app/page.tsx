@@ -15,7 +15,7 @@ export default function Home() {
       <FeaturesSection />
 
       {/* CTA Section */}
-      <section className="mx-4 md:mx-auto md:max-w-7xl mb-16 md:mb-0 rounded-2xl bg-black text-white px-6 py-14 md:px-16 md:py-20">
+      <section className="mx-4 md:mx-auto md:max-w-7xl mb-12 rounded-2xl bg-black text-white px-6 py-14 md:px-16 md:py-20">
         <div className="text-center">
           <h2 className="text-2xl md:text-4xl font-bold mb-4">Ready to Create Amazing Clips?</h2>
           <p className="text-gray-300 mb-8 text-base md:text-lg max-w-xl mx-auto">
