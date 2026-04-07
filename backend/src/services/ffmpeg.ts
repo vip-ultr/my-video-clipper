@@ -343,8 +343,9 @@ export function encodeVideo(
         '-r', String(fps),
         '-vsync', 'cfr',
         '-c:a', 'aac',
-        '-b:a', '128k',
-        '-preset', 'fast',
+        '-b:a', '96k',
+        '-preset', 'ultrafast',
+        '-threads', '2',
         '-avoid_negative_ts', 'make_zero',
         '-y',
         outputPath

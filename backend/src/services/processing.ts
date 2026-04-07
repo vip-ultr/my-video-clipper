@@ -55,6 +55,7 @@ export async function processClip(settings: ClipSettings): Promise<{ success: bo
     }
 
     let currentInput = extractedClipPath;
+    let wasReencoded = false; // track if any intermediate step already re-encoded
 
     // Step 2: Apply blur if enabled
     if (settings.blurEnabled) {
@@ -63,6 +64,7 @@ export async function processClip(settings: ClipSettings): Promise<{ success: bo
       await ffmpegService.applyBlur(currentInput, settings.blurStrength, blurredPath);
       fs.unlinkSync(currentInput); // Clean up previous temp file
       currentInput = blurredPath;
+      wasReencoded = true;
     }
 
     // Step 3: Adjust aspect ratio (skip if 1:1 to reduce memory usage)
@@ -73,6 +75,7 @@ export async function processClip(settings: ClipSettings): Promise<{ success: bo
         await ffmpegService.resizeAspectRatio(currentInput, settings.aspectRatio, resizedPath);
         fs.unlinkSync(currentInput);
         currentInput = resizedPath;
+        wasReencoded = true;
       } catch (resizeError) {
         logger.warn('Aspect ratio adjustment failed, continuing without resize:', resizeError);
         // Continue with original aspect ratio to avoid memory issues
@@ -108,6 +111,7 @@ export async function processClip(settings: ClipSettings): Promise<{ success: bo
 
           fs.unlinkSync(currentInput);
           currentInput = subtitledPath;
+          wasReencoded = true;
           logger.info('Subtitles burned successfully');
         } else {
           logger.warn('Could not generate subtitle file, skipping subtitles');
@@ -182,6 +186,7 @@ export async function processClip(settings: ClipSettings): Promise<{ success: bo
           );
           fs.unlinkSync(currentInput);
           currentInput = watermarkedPath;
+          wasReencoded = true;
           logger.info('Watermark applied successfully');
         } else {
           logger.warn('Watermark file not available, skipping watermark step');
@@ -221,15 +226,21 @@ export async function processClip(settings: ClipSettings): Promise<{ success: bo
       throw new Error(`Cannot write to output directory: ${outputDir}`);
     }
 
-    try {
-      await ffmpegService.encodeVideo(currentInput, settings.quality, settings.fps, outputPath);
-      logger.info('Encoding completed successfully');
-    } catch (encodeError) {
-      logger.error('Final encoding failed:', encodeError);
-      throw new Error(`Video encoding failed: ${encodeError instanceof Error ? encodeError.message : String(encodeError)}`);
+    if (wasReencoded) {
+      // Intermediate steps already produced clean H.264 — just rename to final path
+      logger.info('Step 6: Skipping re-encode (video already encoded by intermediate step)');
+      fs.renameSync(currentInput, outputPath);
+    } else {
+      // Raw stream-copied clip — needs a full encode to apply quality/fps settings
+      try {
+        await ffmpegService.encodeVideo(currentInput, settings.quality, settings.fps, outputPath);
+        logger.info('Encoding completed successfully');
+      } catch (encodeError) {
+        logger.error('Final encoding failed:', encodeError);
+        throw new Error(`Video encoding failed: ${encodeError instanceof Error ? encodeError.message : String(encodeError)}`);
+      }
+      fs.unlinkSync(currentInput);
     }
-
-    fs.unlinkSync(currentInput);
 
     // Save clip record to database
     logger.info('Saving clip to database...');
