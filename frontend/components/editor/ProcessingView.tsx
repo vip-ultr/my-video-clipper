@@ -323,13 +323,43 @@ export function ProcessingView({ videoId, onClipsReady }: ProcessingViewProps) {
         <ClipsReadyView
           clips={generatedClips}
           projectName={projectName}
-          onDownloadAll={() => {
-            generatedClips.forEach(clip => {
-              window.location.href = `/api/download/${clip.id}`;
-            });
+          onDownloadAll={async () => {
+            for (const clip of generatedClips) {
+              try {
+                const response = await api.downloadClip(clip.id);
+                const url = window.URL.createObjectURL(response.data);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = clip.filename || `clip-${clip.id}.mp4`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+
+                // Add delay between downloads to prevent browser blocking
+                await new Promise(resolve => setTimeout(resolve, 500));
+              } catch (error) {
+                console.error(`Failed to download clip ${clip.id}:`, error);
+                setError(`Failed to download clip ${clip.index}`);
+              }
+            }
           }}
-          onDownload={(clipId) => {
-            window.location.href = `/api/download/${clipId}`;
+          onDownload={async (clipId) => {
+            try {
+              const clip = generatedClips.find(c => c.id === clipId);
+              const response = await api.downloadClip(clipId);
+              const url = window.URL.createObjectURL(response.data);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = clip?.filename || `clip-${clipId}.mp4`;
+              document.body.appendChild(a);
+              a.click();
+              window.URL.revokeObjectURL(url);
+              document.body.removeChild(a);
+            } catch (error) {
+              console.error(`Failed to download clip ${clipId}:`, error);
+              setError(`Failed to download the clip. Please try again.`);
+            }
           }}
           onEdit={(clipId, index) => {
             // Find the clip to get its timing

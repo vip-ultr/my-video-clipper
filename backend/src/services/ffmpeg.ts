@@ -2,8 +2,17 @@ import ffmpeg from 'fluent-ffmpeg';
 import ffmpegStatic from 'ffmpeg-static';
 import { logger } from '../utils/logger.js';
 
+// Set FFmpeg path - use ffmpeg-static if available, otherwise rely on system PATH
 if (ffmpegStatic) {
-  ffmpeg.setFfmpegPath(ffmpegStatic as unknown as string);
+  try {
+    ffmpeg.setFfmpegPath(ffmpegStatic as unknown as string);
+    logger.info('Using ffmpeg-static binary');
+  } catch (e) {
+    logger.warn('Failed to set ffmpeg-static path, falling back to system FFmpeg');
+    // Continue without setting path - will use system FFmpeg from PATH
+  }
+} else {
+  logger.info('ffmpeg-static not available, using system FFmpeg');
 }
 
 export function extractClip(
@@ -13,20 +22,35 @@ export function extractClip(
   outputPath: string
 ): Promise<void> {
   return new Promise((resolve, reject) => {
-    ffmpeg(inputPath)
-      .setStartTime(startTime)
-      .duration(endTime - startTime)
-      .output(outputPath)
-      .on('start', (commandLine: any) => logger.debug('FFmpeg command:', commandLine))
-      .on('end', () => {
-        logger.info(`Clip extracted: ${outputPath}`);
-        resolve();
-      })
-      .on('error', (err: any) => {
-        logger.error('Clip extraction error:', err);
-        reject(err);
-      })
-      .run();
+    try {
+      const duration = endTime - startTime;
+      logger.info(`Extracting clip: ${inputPath} [${startTime}s-${endTime}s] -> ${outputPath}`);
+
+      ffmpeg(inputPath)
+        .setStartTime(startTime)
+        .duration(duration)
+        .output(outputPath)
+        .on('start', (commandLine: any) => {
+          logger.info('Clip extraction started');
+          logger.debug('Command:', commandLine);
+        })
+        .on('end', () => {
+          logger.info(`Clip extracted successfully: ${outputPath}`);
+          resolve();
+        })
+        .on('error', (err: any, stdout: any, stderr: any) => {
+          logger.error('Clip extraction failed:', {
+            error: err?.message || String(err),
+            stdout: stdout?.slice(-500) || '',
+            stderr: stderr?.slice(-500) || ''
+          });
+          reject(err);
+        })
+        .run();
+    } catch (error) {
+      logger.error('Extraction setup error:', error);
+      reject(error);
+    }
   });
 }
 
@@ -146,23 +170,44 @@ export function encodeVideo(
   };
 
   return new Promise((resolve, reject) => {
-    ffmpeg(inputPath)
-      .videoCodec('libx264')
-      .audioCodec('aac')
-      .videoBitrate(bitrates[quality as keyof typeof bitrates] || '2500k')
-      .audioBitrate('96k')
-      .fps(fps)
-      .output(outputPath)
-      .on('start', (commandLine: any) => logger.debug('FFmpeg command:', commandLine))
-      .on('end', () => {
-        logger.info(`Video encoded: ${outputPath}`);
-        resolve();
-      })
-      .on('error', (err: any) => {
-        logger.error('Encoding error:', err);
-        reject(err);
-      })
-      .run();
+    try {
+      const bitrate = bitrates[quality as keyof typeof bitrates] || '2500k';
+      logger.info(`Starting video encoding: ${inputPath} -> ${outputPath} (${bitrate}@${fps}fps)`);
+
+      ffmpeg(inputPath)
+        .videoCodec('libx264')
+        .videoBitrate(bitrate)
+        .fps(fps)
+        .output(outputPath)
+        .on('start', (commandLine: any) => {
+          logger.info('FFmpeg encoding started');
+          logger.debug('Full command:', commandLine);
+        })
+        .on('progress', (progress: any) => {
+          if (progress.percent) {
+            logger.debug(`Encoding progress: ${Math.round(progress.percent)}%`);
+          }
+        })
+        .on('end', () => {
+          logger.info(`Video encoded successfully: ${outputPath}`);
+          resolve();
+        })
+        .on('error', (err: any, stdout: any, stderr: any) => {
+          logger.error('Encoding failed:', {
+            inputPath,
+            outputPath,
+            error: err?.message || String(err),
+            code: (err as any)?.code,
+            stdout: stdout ? stdout.toString().slice(-500) : '',
+            stderr: stderr ? stderr.toString().slice(-500) : ''
+          });
+          reject(new Error(`FFmpeg encoding failed: ${err?.message || String(err)}`));
+        })
+        .run();
+    } catch (error) {
+      logger.error('Encoding setup error:', error);
+      reject(error);
+    }
   });
 }
 

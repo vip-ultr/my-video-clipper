@@ -109,7 +109,31 @@ export async function processClip(settings: ClipSettings): Promise<{ success: bo
 
     // Step 5: Final encoding with quality and FPS settings
     logger.info('Step 5: Final encoding...');
-    await ffmpegService.encodeVideo(currentInput, settings.quality, settings.fps, outputPath);
+
+    // Ensure output directory exists and is writable
+    const outputDir = path.dirname(outputPath);
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+      logger.info(`Created output directory: ${outputDir}`);
+    }
+
+    // Verify write permissions
+    try {
+      fs.accessSync(outputDir, fs.constants.W_OK);
+      logger.info(`Output directory is writable: ${outputDir}`);
+    } catch (err) {
+      logger.error(`Output directory is not writable: ${outputDir}`, err);
+      throw new Error(`Cannot write to output directory: ${outputDir}`);
+    }
+
+    try {
+      await ffmpegService.encodeVideo(currentInput, settings.quality, settings.fps, outputPath);
+      logger.info('Encoding completed successfully');
+    } catch (encodeError) {
+      logger.error('Final encoding failed:', encodeError);
+      throw new Error(`Video encoding failed: ${encodeError instanceof Error ? encodeError.message : String(encodeError)}`);
+    }
+
     fs.unlinkSync(currentInput);
 
     // Save clip record to database
