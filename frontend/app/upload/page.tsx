@@ -2,12 +2,12 @@
 
 import { useState, useRef } from 'react';
 import { useUpload } from '@/hooks/useUpload';
-import { useProcessing } from '@/hooks/useProcessing';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Upload, AlertCircle } from 'lucide-react';
-import { formatBytes } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { AlertCircle } from 'lucide-react';
+import { VideoUpload } from '@/components/upload/VideoUpload';
+import { ProjectSettings } from '@/components/upload/ProjectSettings';
+import { UploadProgress } from '@/components/upload/UploadProgress';
 
 export default function UploadPage() {
   const router = useRouter();
@@ -30,8 +30,6 @@ export default function UploadPage() {
     setClipDuration,
     uploadVideo
   } = useUpload();
-
-  const { startAnalysis } = useProcessing();
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -85,149 +83,46 @@ export default function UploadPage() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Video Upload Area */}
-        <div
-          onDragEnter={handleDrag}
-          onDragLeave={handleDrag}
-          onDragOver={handleDrag}
+      <form onSubmit={handleSubmit} className="space-y-8">
+        {/* Video Upload Component */}
+        <VideoUpload
+          dragActive={dragActive}
+          onDrag={handleDrag}
           onDrop={handleDrop}
-          className={`border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition ${
-            dragActive ? 'border-black bg-gray-50' : 'border-gray-300 hover:border-gray-400'
-          }`}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="video/mp4,video/quicktime,video/webm"
-            onChange={handleFileChange}
-            className="hidden"
-            disabled={isUploading}
+          onFileChange={handleFileChange}
+          onClickUpload={() => fileInputRef.current?.click()}
+          videoFile={videoFile}
+        />
+
+        {/* Project Settings Component */}
+        {videoFile && (
+          <ProjectSettings
+            projectName={projectName}
+            onProjectNameChange={setProjectName}
+            clippingMode={clippingMode}
+            onClippingModeChange={setClippingMode}
+            clipCount={clipCount}
+            onClipCountChange={setClipCount}
+            clipDuration={clipDuration}
+            onClipDurationChange={setClipDuration}
           />
-
-          <Upload className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-          <h3 className="text-xl font-semibold mb-2">
-            {videoFile ? videoFile.name : 'Drop your video here'}
-          </h3>
-          <p className="text-gray-600">
-            {videoFile ? (
-              <span>
-                {formatBytes(videoFile.size)} • Click to change
-              </span>
-            ) : (
-              <span>or click to browse (MP4, MOV, WebM up to 1.5GB)</span>
-            )}
-          </p>
-        </div>
-
-        {/* Project Details */}
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-2">Project Name *</label>
-            <Input
-              type="text"
-              placeholder="e.g., Gaming Highlights 2024"
-              value={projectName}
-              onChange={(e) => setProjectName(e.target.value)}
-              disabled={isUploading}
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">Clipping Mode</label>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setClippingMode('ai-detection')}
-                className={`p-4 border rounded-lg transition ${
-                  clippingMode === 'ai-detection'
-                    ? 'border-black bg-black text-white'
-                    : 'border-gray-300 hover:border-gray-400'
-                }`}
-                disabled={isUploading}
-              >
-                <div className="font-semibold">🤖 AI Detection</div>
-                <div className={`text-sm ${clippingMode === 'ai-detection' ? 'text-gray-200' : 'text-gray-600'}`}>
-                  Auto-detect high-engagement moments
-                </div>
-              </button>
-              <button
-                type="button"
-                onClick={() => setClippingMode('manual-slicing')}
-                className={`p-4 border rounded-lg transition ${
-                  clippingMode === 'manual-slicing'
-                    ? 'border-black bg-black text-white'
-                    : 'border-gray-300 hover:border-gray-400'
-                }`}
-                disabled={isUploading}
-              >
-                <div className="font-semibold">✂️ Manual Slicing</div>
-                <div className={`text-sm ${clippingMode === 'manual-slicing' ? 'text-gray-200' : 'text-gray-600'}`}>
-                  Define clips by time
-                </div>
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">Number of Clips: {clipCount}</label>
-            <input
-              type="range"
-              min="1"
-              max="20"
-              value={clipCount}
-              onChange={(e) => setClipCount(Number(e.target.value))}
-              className="w-full"
-              disabled={isUploading}
-            />
-            <p className="text-sm text-gray-600 mt-2">Create approximately {clipCount} clips</p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">Clip Duration: {clipDuration}s</label>
-            <div className="grid grid-cols-4 gap-2">
-              {[15, 30, 40, 60].map((duration) => (
-                <button
-                  key={duration}
-                  type="button"
-                  onClick={() => setClipDuration(duration)}
-                  className={`p-2 border rounded transition ${
-                    clipDuration === duration
-                      ? 'border-black bg-black text-white'
-                      : 'border-gray-300 hover:border-black'
-                  }`}
-                  disabled={isUploading}
-                >
-                  {duration}s
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Upload Progress */}
-        {isUploading && (
-          <div className="space-y-2">
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div
-                className="bg-black h-2 rounded-full transition-all duration-300"
-                style={{ width: `${uploadProgress}%` }}
-              />
-            </div>
-            <p className="text-sm text-gray-600 text-center">Uploading... {uploadProgress}%</p>
-          </div>
         )}
 
+        {/* Upload Progress Component */}
+        <UploadProgress isUploading={isUploading} progress={uploadProgress} />
+
         {/* Submit Button */}
-        <Button
-          type="submit"
-          disabled={!videoFile || !projectName.trim() || isUploading}
-          className="w-full h-12 text-lg bg-black text-white hover:bg-gray-800 disabled:opacity-50"
-        >
-          {isUploading ? 'Uploading...' : 'Start Processing'}
-        </Button>
+        {videoFile && (
+          <div className="flex justify-center">
+            <Button
+              type="submit"
+              disabled={isUploading || !projectName.trim()}
+              className="bg-black text-white hover:bg-gray-800 h-12 px-8 text-lg"
+            >
+              {isUploading ? 'Uploading...' : 'Start Processing'}
+            </Button>
+          </div>
+        )}
       </form>
     </div>
   );
