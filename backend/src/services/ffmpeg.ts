@@ -154,34 +154,24 @@ export function burnSubtitles(
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     try {
-      // Build subtitle filter based on style
-      let fontsize = '48';
-      let filterOptions = `fontsize=${fontsize}:fontcolor=white:margin_v=40`;
-
-      switch (style) {
-        case 'emphasis':
-          filterOptions = `fontsize=48:fontcolor=white:borderw=2:bordercolor=black:margin_v=40`;
-          break;
-        case 'rhythm':
-          filterOptions = `fontsize=42:fontcolor=white:shadowx=2:shadowy=2:shadowcolor=black:margin_v=40`;
-          break;
-        case 'uniform':
-          filterOptions = `fontsize=40:fontcolor=white:margin_v=40`;
-          break;
-        default:
-          filterOptions = `fontsize=48:fontcolor=white:borderw=2:bordercolor=black:margin_v=40`;
-      }
-
-      // Use spawn for more reliable FFmpeg control with complex filters
+      // FFmpeg subtitles filter doesn't support styling options like fontsize
+      // Use the simple subtitles filter to overlay SRT/VTT subtitles
       const ffmpegPath = (typeof ffmpegStatic === 'string' ? ffmpegStatic : 'ffmpeg') as string;
-      const filter = `subtitles='${subtitlePath}':${filterOptions}`;
+
+      // Escape the subtitle path for FFmpeg filter
+      // Remove leading/trailing quotes if present and re-add them
+      const cleanPath = subtitlePath.replace(/^['"]|['"]$/g, '');
+      const filter = `subtitles='${cleanPath}'`;
+
+      logger.info(`Burning subtitles with filter: ${filter}`);
 
       const args = [
         '-i', inputPath,
         '-vf', filter,
-        '-c:a', 'aac',
+        '-c:a', 'copy',
         '-c:v', 'libx264',
         '-preset', 'fast',
+        '-crf', '23',
         '-y',
         outputPath
       ];
@@ -214,7 +204,7 @@ export function burnSubtitles(
             stderr: stderr?.slice(-1000) || '',
             stdout: stdout?.slice(-500) || ''
           });
-          reject(new Error(`FFmpeg subtitle burning failed with code ${code}: ${stderr}`));
+          reject(new Error(`FFmpeg subtitle burning failed with code ${code}`));
         }
       });
 
