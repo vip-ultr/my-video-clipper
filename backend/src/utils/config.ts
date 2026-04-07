@@ -48,7 +48,18 @@ export function ensureDirectories() {
 
 // Validate config
 export function validateConfig() {
-  if (!config.supabase.url || !config.supabase.serviceRoleKey) {
-    throw new Error('Missing required Supabase configuration');
+  const errors: string[] = [];
+
+  if (!config.supabase.url) {
+    errors.push('Missing NEXT_PUBLIC_SUPABASE_URL');
+  }
+  if (!config.supabase.serviceRoleKey) {
+    errors.push('Missing SUPABASE_SERVICE_ROLE_KEY');
+  }
+
+  if (errors.length > 0) {
+    const errorMsg = `Configuration errors:\n${errors.join('\n')}`;
+    console.error(errorMsg);
+    throw new Error(errorMsg);
   }
 }

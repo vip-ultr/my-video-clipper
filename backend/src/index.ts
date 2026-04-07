@@ -25,11 +25,18 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // Initialize
 try {
+  logger.info('[STARTUP] Starting server initialization...');
+  logger.info(`[STARTUP] Node environment: ${config.nodeEnv}`);
+  logger.info(`[STARTUP] Port: ${PORT}`);
+  logger.info(`[STARTUP] Supabase URL set: ${!!config.supabase.url}`);
+  logger.info(`[STARTUP] Service role key set: ${!!config.supabase.serviceRoleKey}`);
+
   validateConfig();
   ensureDirectories();
-  logger.info('Configuration validated and directories ensured');
+  logger.info('[STARTUP] Configuration validated and directories ensured');
 } catch (error) {
-  logger.error('Initialization failed:', error);
+  logger.error('[STARTUP] Initialization failed:', error);
+  logger.error('[STARTUP] Make sure all required environment variables are set');
   process.exit(1);
 }
 
@@ -58,8 +65,18 @@ app.use((req, res) => {
 // Error handler (must be last)
 app.use(errorHandler);
 
+// Unhandled error handlers
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error('[FATAL] Unhandled Promise Rejection:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+  logger.error('[FATAL] Uncaught Exception:', error);
+  process.exit(1);
+});
+
 // Start server
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   logger.info(`[SERVER] Running on port ${PORT}`);
   logger.info(`[SERVER] Environment: ${config.nodeEnv}`);
   logger.info(`[SERVER] Supabase URL: ${config.supabase.url}`);
@@ -68,4 +85,14 @@ app.listen(PORT, () => {
   startCleanupJob();
 
   logger.info('[SERVER] Startup completed successfully');
+});
+
+// Handle server errors
+server.on('error', (error: any) => {
+  if (error.code === 'EADDRINUSE') {
+    logger.error(`[SERVER] Port ${PORT} is already in use`);
+  } else {
+    logger.error('[SERVER] Server error:', error);
+  }
+  process.exit(1);
 });
