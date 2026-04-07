@@ -79,9 +79,18 @@ export async function processClip(settings: ClipSettings): Promise<{ success: bo
       logger.info('Step 3: Skipping aspect ratio adjustment (1:1 mode)');
     }
 
-    // Step 4: Add watermark if specified
+    // Step 4: Burn subtitles if enabled
+    if (settings.subtitlesEnabled) {
+      logger.info('Step 4: Burning subtitles...');
+      // Note: This requires subtitle file to be generated from transcription
+      // For now, skipping if no subtitle file is available
+      // TODO: Integrate with Whisper transcription to generate subtitle files
+      logger.info('Step 4: Subtitles enabled but transcription not yet implemented, continuing without subtitles');
+    }
+
+    // Step 5: Add watermark if specified
     if (settings.watermarkType && settings.watermarkType !== 'none') {
-      logger.info('Step 4: Adding watermark...');
+      logger.info('Step 5: Adding watermark...');
       const watermarkedPath = path.join(tempDir, `watermarked-${clipFileName}`);
 
       let watermarkImagePath = '';
@@ -107,8 +116,8 @@ export async function processClip(settings: ClipSettings): Promise<{ success: bo
       }
     }
 
-    // Step 5: Final encoding with quality and FPS settings
-    logger.info('Step 5: Final encoding...');
+    // Step 6: Final encoding with quality and FPS settings
+    logger.info('Step 6: Final encoding...');
 
     // Ensure output directory exists and is writable
     const outputDir = path.dirname(outputPath);

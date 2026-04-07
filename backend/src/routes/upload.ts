@@ -46,6 +46,8 @@ router.post(
     }
 
     const projectName = req.body.projectName || 'Untitled Project';
+    const clippingMode = req.body.clippingMode || 'MANUAL'; // Default to MANUAL clipping
+    const clipCount = parseInt(req.body.clipCount, 10) || 3; // Default to 3 clips
     let duration = 0;
 
     try {
@@ -62,6 +64,8 @@ router.post(
       file_path: req.file.path,
       duration_seconds: duration,
       transcript: null,
+      clipping_mode: clippingMode,
+      clip_count: clipCount,
       created_at: new Date()
     };
 
@@ -84,7 +88,9 @@ router.post(
       filePath: req.file.path,
       fileName: req.file.originalname,
       fileSize: req.file.size,
-      duration: duration
+      duration: duration,
+      clippingMode: clippingMode,
+      clipCount: clipCount
     });
   })
 );

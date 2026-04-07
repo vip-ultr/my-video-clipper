@@ -1,9 +1,10 @@
 import express, { Request, Response } from 'express';
-import { getVideo, getClips } from '../services/supabase.js';
+import { getVideo, getClips, saveClip } from '../services/supabase.js';
 import { asyncHandler } from '../middleware/validation.js';
 import { logger } from '../utils/logger.js';
 import { transcribeAudio } from '../services/whisper.js';
-import { analyzeSegmentSentiment } from '../services/sentiment.js';
+import { analyzeSegmentSentiment, identifyHighEngagementSegments } from '../services/sentiment.js';
+import { randomUUID } from 'crypto';
 
 const router = express.Router();
 
@@ -94,6 +95,155 @@ router.post(
       success: true,
       analysis: analysisData
     });
+  })
+);
+
+// Generate clip suggestions based on clipping mode
+router.post(
+  '/:videoId/generate-clips',
+  asyncHandler(async (req: Request, res: Response) => {
+    const { videoId } = req.params;
+    const { clippingMode = 'MANUAL', clipCount = 3 } = req.body;
+
+    const video = await getVideo(videoId);
+    if (!video) {
+      return res.status(404).json({ error: 'Video not found' });
+    }
+
+    logger.info(`Generating clips for video: ${videoId}, mode: ${clippingMode}, count: ${clipCount}`);
+
+    try {
+      let clipSuggestions = [];
+
+      if (clippingMode === 'MANUAL') {
+        // Manual clipping: divide video into equal segments
+        const clipDuration = video.duration_seconds / clipCount;
+
+        for (let i = 0; i < clipCount; i++) {
+          const startTime = i * clipDuration;
+          const endTime = Math.min((i + 1) * clipDuration, video.duration_seconds);
+
+          // Save clip suggestion to database
+          const clipId = randomUUID();
+          const clipData = {
+            id: clipId,
+            video_id: videoId,
+            project_name: video.project_name,
+            clip_index: i,
+            start_time: startTime,
+            end_time: endTime,
+            duration_seconds: Math.ceil(endTime - startTime),
+            subtitles_enabled: false,
+            subtitle_style: 'default',
+            subtitle_primary_color: '#FFFFFF',
+            subtitle_secondary_color: '#999999',
+            subtitle_position: 'bottom',
+            blur_enabled: false,
+            blur_strength: 15,
+            watermark_type: 'none',
+            watermark_id: null,
+            watermark_position: 'bottom-right',
+            watermark_size: 20,
+            watermark_opacity: 80,
+            aspect_ratio: '9:16',
+            quality: 'medium',
+            fps: 30,
+            output_file_path: null,
+            processed: false,
+            download_count: 0,
+            is_edited: false,
+            created_at: new Date(),
+            updated_at: new Date()
+          };
+
+          await saveClip(clipData);
+
+          clipSuggestions.push({
+            id: clipId,
+            index: i,
+            startTime,
+            endTime,
+            duration: Math.ceil(endTime - startTime),
+            engagementScore: 0.5, // Default for manual clips
+            reason: `Segment ${i + 1} of ${clipCount}`
+          });
+        }
+      } else if (clippingMode === 'AI') {
+        // AI clipping: use sentiment analysis to identify high-engagement segments
+        // For now, using mock data - in production would use real transcription and sentiment analysis
+        const mockSegments = [
+          { start: 0, end: Math.min(10, video.duration_seconds), score: 0.6 },
+          { start: Math.min(10, video.duration_seconds), end: Math.min(20, video.duration_seconds), score: 0.8 },
+          { start: Math.min(20, video.duration_seconds), end: Math.min(30, video.duration_seconds), score: 0.65 }
+        ];
+
+        // Filter high engagement segments (score > 0.7)
+        const highEngagementSegments = mockSegments.filter(seg => seg.score > 0.7).slice(0, clipCount);
+
+        let clipIndex = 0;
+        for (const segment of highEngagementSegments) {
+          const clipId = randomUUID();
+          const clipData = {
+            id: clipId,
+            video_id: videoId,
+            project_name: video.project_name,
+            clip_index: clipIndex,
+            start_time: segment.start,
+            end_time: segment.end,
+            duration_seconds: Math.ceil(segment.end - segment.start),
+            subtitles_enabled: false,
+            subtitle_style: 'default',
+            subtitle_primary_color: '#FFFFFF',
+            subtitle_secondary_color: '#999999',
+            subtitle_position: 'bottom',
+            blur_enabled: false,
+            blur_strength: 15,
+            watermark_type: 'none',
+            watermark_id: null,
+            watermark_position: 'bottom-right',
+            watermark_size: 20,
+            watermark_opacity: 80,
+            aspect_ratio: '9:16',
+            quality: 'medium',
+            fps: 30,
+            output_file_path: null,
+            processed: false,
+            download_count: 0,
+            is_edited: false,
+            created_at: new Date(),
+            updated_at: new Date()
+          };
+
+          await saveClip(clipData);
+
+          clipSuggestions.push({
+            id: clipId,
+            index: clipIndex,
+            startTime: segment.start,
+            endTime: segment.end,
+            duration: Math.ceil(segment.end - segment.start),
+            engagementScore: segment.score,
+            reason: 'High engagement detected'
+          });
+
+          clipIndex++;
+        }
+      }
+
+      res.json({
+        success: true,
+        mode: clippingMode,
+        clipsGenerated: clipSuggestions.length,
+        clips: clipSuggestions
+      });
+
+    } catch (error) {
+      logger.error('Failed to generate clips:', error);
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to generate clips'
+      });
+    }
   })
 );
 

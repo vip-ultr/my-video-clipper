@@ -11,10 +11,12 @@ const apiClient = axios.create({
 });
 
 // Video upload
-export async function uploadVideo(file: File, projectName: string) {
+export async function uploadVideo(file: File, projectName: string, clippingMode?: string, clipCount?: number) {
   const formData = new FormData();
   formData.append('video', file);
   formData.append('projectName', projectName);
+  if (clippingMode) formData.append('clippingMode', clippingMode);
+  if (clipCount) formData.append('clipCount', String(clipCount));
 
   return apiClient.post('/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
@@ -70,6 +72,18 @@ export async function getProcessingStatus(videoId: string) {
 // Start analysis
 export async function startAnalysis(videoId: string) {
   return apiClient.post(`/processing/${videoId}/analyze`);
+}
+
+// Generate clips based on clipping mode
+export async function generateClips(videoId: string, options: { clippingMode?: string; clipCount?: number }) {
+  return apiClient.post(`/processing/${videoId}/generate-clips`, options);
+}
+
+// Quick download clip (fast raw extraction)
+export async function quickDownloadClip(clipId: string) {
+  return apiClient.get(`/clips/quick-download/${clipId}`, {
+    responseType: 'blob'
+  });
 }
 
 // Health check

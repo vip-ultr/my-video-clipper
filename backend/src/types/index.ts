@@ -6,6 +6,8 @@ export interface Video {
   duration_seconds: number;
   transcript: Record<string, any> | null;
   sentiment_scores: Record<string, any> | null;
+  clipping_mode?: string; // 'MANUAL' or 'AI'
+  clip_count?: number; // Number of clips to generate
   created_at: Date;
 }
 

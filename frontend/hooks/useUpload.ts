@@ -36,7 +36,10 @@ export function useUpload() {
       setIsUploading(true);
       setError(null);
 
-      const response = await api.uploadVideo(videoFile, projectName);
+      // Convert clipping mode from store format to backend format
+      const backendClippingMode = clippingMode === 'ai-detection' ? 'AI' : 'MANUAL';
+
+      const response = await api.uploadVideo(videoFile, projectName, backendClippingMode, clipCount);
 
       if (response.data.success) {
         setVideoId(response.data.videoId);
@@ -53,7 +56,7 @@ export function useUpload() {
     } finally {
       setIsUploading(false);
     }
-  }, [videoFile, projectName, setIsUploading, setError, setVideoId, setUploadProgress]);
+  }, [videoFile, projectName, clippingMode, clipCount, setIsUploading, setError, setVideoId, setUploadProgress]);
 
   return {
     videoFile,
