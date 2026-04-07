@@ -6,6 +6,7 @@ import { Download, Edit2, CheckCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ClipItem } from '@/store/uploadStore';
 import * as api from '@/lib/api';
+import { downloadFile } from '@/lib/utils';
 
 interface ClipsListViewProps {
   clips: ClipItem[];
@@ -21,16 +22,6 @@ function formatTime(seconds: number) {
   return `${m}:${s}`;
 }
 
-function triggerBrowserDownload(blob: Blob, filename: string) {
-  const url = window.URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  window.URL.revokeObjectURL(url);
-}
 
 export function ClipsListView({ clips, projectName, videoId }: ClipsListViewProps) {
   const router = useRouter();
@@ -52,7 +43,7 @@ export function ClipsListView({ clips, projectName, videoId }: ClipsListViewProp
       const response = await api.quickDownloadClip(clip.id, (pct) =>
         setClipState(clip.id, { progress: pct })
       );
-      triggerBrowserDownload(response.data, `${projectName}-clip-${clip.index + 1}.mp4`);
+      await downloadFile(response.data, `${projectName}-clip-${clip.index + 1}.mp4`);
       setClipState(clip.id, { status: 'done', progress: 100 });
     } catch {
       setClipState(clip.id, { status: 'error', progress: 0 });
@@ -70,7 +61,7 @@ export function ClipsListView({ clips, projectName, videoId }: ClipsListViewProp
           const overall = Math.round(((i + pct / 100) / clips.length) * 100);
           setDownloadAllState(prev => ({ ...prev, progress: overall }));
         });
-        triggerBrowserDownload(response.data, `${projectName}-clip-${clip.index + 1}.mp4`);
+        await downloadFile(response.data, `${projectName}-clip-${clip.index + 1}.mp4`);
         setClipState(clip.id, { status: 'done', progress: 100 });
         setDownloadAllState(prev => ({ ...prev, done: i + 1, progress: Math.round(((i + 1) / clips.length) * 100) }));
       } catch {

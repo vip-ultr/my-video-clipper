@@ -42,13 +42,31 @@ export function sanitizeFileName(fileName: string): string {
   return fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
 }
 
-export function downloadFile(blob: Blob, fileName: string) {
+export async function downloadFile(blob: Blob, fileName: string): Promise<void> {
+  // Use File System Access API for native Save As dialog (Chrome/Edge)
+  if (typeof window !== 'undefined' && 'showSaveFilePicker' in window) {
+    try {
+      const handle = await (window as any).showSaveFilePicker({
+        suggestedName: fileName,
+        types: [{ description: 'MP4 Video', accept: { 'video/mp4': ['.mp4'] } }],
+      });
+      const writable = await handle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+      return;
+    } catch (err: any) {
+      if (err?.name === 'AbortError') return; // user cancelled
+      // fall through to anchor fallback on other errors
+    }
+  }
+
+  // Fallback for Firefox/Safari
   const url = window.URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
   a.download = fileName;
   document.body.appendChild(a);
   a.click();
-  window.URL.revokeObjectURL(url);
   document.body.removeChild(a);
+  window.URL.revokeObjectURL(url);
 }

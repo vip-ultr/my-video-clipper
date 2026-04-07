@@ -12,20 +12,8 @@ import { WatermarkSelector } from '@/components/editor/WatermarkSelector';
 import { QualityFpsSelector } from '@/components/editor/QualityFpsSelector';
 import { VideoPreview } from '@/components/editor/VideoPreview';
 import { Button } from '@/components/ui/button';
+import { downloadFile } from '@/lib/utils';
 import { Loader2, Download, CheckCircle, AlertCircle } from 'lucide-react';
-
-// ─── Helpers ────────────────────────────────────────────────────────────────
-
-function triggerBrowserDownload(blob: Blob, filename: string) {
-  const url = window.URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  window.URL.revokeObjectURL(url);
-}
 
 // ─── Edit-All progress view ─────────────────────────────────────────────────
 
@@ -46,7 +34,7 @@ function EditAllResults({ clips, projectName }: { clips: EditedClip[]; projectNa
     setState(clip.id, { progress: 0, done: false, error: false });
     try {
       const response = await api.downloadClip(clip.id, (pct) => setState(clip.id, { progress: pct }));
-      triggerBrowserDownload(response.data, clip.filename);
+      await downloadFile(response.data, clip.filename);
       setState(clip.id, { done: true, progress: 100 });
     } catch {
       setState(clip.id, { error: true });
@@ -63,7 +51,7 @@ function EditAllResults({ clips, projectName }: { clips: EditedClip[]; projectNa
           setState(clip.id, { progress: pct });
           setDownloadAllState(prev => ({ ...prev, progress: Math.round(((i + pct / 100) / clips.length) * 100) }));
         });
-        triggerBrowserDownload(response.data, clip.filename);
+        await downloadFile(response.data, clip.filename);
         setState(clip.id, { done: true, progress: 100 });
         setDownloadAllState(prev => ({ ...prev, done: i + 1, progress: Math.round(((i + 1) / clips.length) * 100) }));
       } catch {
@@ -203,7 +191,7 @@ function EditorContent() {
     setSingleError(null);
     try {
       const response = await api.downloadClip(singleClipResult.clipId, setSingleDownloadProgress);
-      triggerBrowserDownload(response.data, singleClipResult.filename || `clip-${singleClipResult.clipId}.mp4`);
+      await downloadFile(response.data, singleClipResult.filename || `clip-${singleClipResult.clipId}.mp4`);
       setSingleDownloadProgress(100);
     } catch (err) {
       setSingleError(err instanceof Error ? err.message : 'Download failed');
