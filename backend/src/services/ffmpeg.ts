@@ -1,5 +1,6 @@
 import ffmpeg from 'fluent-ffmpeg';
 import ffmpegStatic from 'ffmpeg-static';
+import { spawn } from 'child_process';
 import { logger } from '../utils/logger.js';
 
 // Set FFmpeg path - use ffmpeg-static if available, otherwise rely on system PATH
@@ -26,27 +27,54 @@ export function extractClip(
       const duration = endTime - startTime;
       logger.info(`Extracting clip: ${inputPath} [${startTime}s-${endTime}s] -> ${outputPath}`);
 
-      ffmpeg(inputPath)
-        .setStartTime(startTime)
-        .duration(duration)
-        .output(outputPath)
-        .on('start', (commandLine: any) => {
-          logger.info('Clip extraction started');
-          logger.debug('Command:', commandLine);
-        })
-        .on('end', () => {
+      // Use raw FFmpeg with -c copy to preserve streams without re-encoding
+      // Command: ffmpeg -ss startTime -i input -t duration -c copy -y output
+      const ffmpegPath = (typeof ffmpegStatic === 'string' ? ffmpegStatic : 'ffmpeg') as string;
+      const args = [
+        '-ss', String(startTime),
+        '-i', inputPath,
+        '-t', String(duration),
+        '-c', 'copy', // Copy all streams
+        '-y', // Overwrite output file
+        outputPath
+      ];
+
+      logger.info(`FFmpeg command: ${ffmpegPath} ${args.join(' ')}`);
+
+      const proc = spawn(ffmpegPath, args);
+      let stderr = '';
+      let stdout = '';
+
+      if (proc.stdout) {
+        proc.stdout.on('data', (data: any) => {
+          stdout += data.toString();
+        });
+      }
+
+      if (proc.stderr) {
+        proc.stderr.on('data', (data: any) => {
+          stderr += data.toString();
+        });
+      }
+
+      proc.on('close', (code: any) => {
+        if (code === 0) {
           logger.info(`Clip extracted successfully: ${outputPath}`);
           resolve();
-        })
-        .on('error', (err: any, stdout: any, stderr: any) => {
+        } else {
           logger.error('Clip extraction failed:', {
-            error: err?.message || String(err),
-            stdout: stdout?.slice(-500) || '',
-            stderr: stderr?.slice(-500) || ''
+            exitCode: code,
+            stderr: stderr?.slice(-500) || '',
+            stdout: stdout?.slice(-500) || ''
           });
-          reject(err);
-        })
-        .run();
+          reject(new Error(`FFmpeg extraction failed with code ${code}: ${stderr}`));
+        }
+      });
+
+      proc.on('error', (err: any) => {
+        logger.error('Clip extraction error:', err);
+        reject(err);
+      });
     } catch (error) {
       logger.error('Extraction setup error:', error);
       reject(error);
