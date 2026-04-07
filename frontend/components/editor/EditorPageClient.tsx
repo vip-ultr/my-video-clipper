@@ -152,12 +152,12 @@ function EditorContent() {
     aspectRatio, quality, fps,
     subtitlesEnabled, subtitleStyle, subtitlePrimaryColor, subtitleSecondaryColor, subtitlePosition,
     blurEnabled, blurStrength,
-    watermarkType, watermarkPosition, watermarkSize, watermarkOpacity,
+    watermarkType, watermarkId, watermarkPosition, watermarkSize, watermarkOpacity,
     isProcessing, error,
     setAspectRatio, setQuality, setFps,
     setSubtitlesEnabled, setSubtitleStyle, setSubtitlePrimaryColor, setSubtitleSecondaryColor, setSubtitlePosition,
     setBlurEnabled, setBlurStrength,
-    setWatermarkType, setWatermarkPosition, setWatermarkSize, setWatermarkOpacity,
+    setWatermarkType, setWatermarkId, setWatermarkPosition, setWatermarkSize, setWatermarkOpacity,
     createClip
   } = useEditor();
 
