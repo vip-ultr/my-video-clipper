@@ -113,36 +113,83 @@ export function resizeAspectRatio(
   outputPath: string
 ): Promise<void> {
   return new Promise((resolve, reject) => {
-    let filter = '';
+    try {
+      let width = '1080';
+      let height = '1920';
 
-    // Map aspect ratios to scale and pad filters
-    switch (aspectRatio) {
-      case '9:16': // Vertical
-        filter = "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2";
-        break;
-      case '16:9': // Horizontal
-        filter = "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2";
-        break;
-      case '1:1': // Square
-        filter = "scale=1080:1080:force_original_aspect_ratio=decrease,pad=1080:1080:(ow-iw)/2:(oh-ih)/2";
-        break;
-      default:
-        filter = "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2";
-    }
+      // Map aspect ratios to dimensions
+      switch (aspectRatio) {
+        case '9:16': // Vertical
+          width = '1080';
+          height = '1920';
+          break;
+        case '16:9': // Horizontal
+          width = '1920';
+          height = '1080';
+          break;
+        case '1:1': // Square
+          width = '1080';
+          height = '1080';
+          break;
+        default:
+          width = '1080';
+          height = '1920';
+      }
 
-    ffmpeg(inputPath)
-      .videoFilters(filter)
-      .output(outputPath)
-      .on('start', (commandLine: any) => logger.debug('FFmpeg command:', commandLine))
-      .on('end', () => {
-        logger.info(`Aspect ratio adjusted: ${outputPath}`);
-        resolve();
-      })
-      .on('error', (err: any) => {
-        logger.error('Aspect ratio error:', err);
+      // Use spawn for memory-efficient aspect ratio adjustment
+      const ffmpegPath = (typeof ffmpegStatic === 'string' ? ffmpegStatic : 'ffmpeg') as string;
+      const filter = `scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2`;
+
+      const args = [
+        '-i', inputPath,
+        '-vf', filter,
+        '-c:a', 'copy',
+        '-c:v', 'libx264',
+        '-preset', 'ultrafast',
+        '-crf', '28',
+        '-y',
+        outputPath
+      ];
+
+      logger.info(`FFmpeg aspect ratio command: ${ffmpegPath} ${args.join(' ')}`);
+
+      const proc = spawn(ffmpegPath, args);
+      let stderr = '';
+      let stdout = '';
+
+      if (proc.stdout) {
+        proc.stdout.on('data', (data: any) => {
+          stdout += data.toString();
+        });
+      }
+
+      if (proc.stderr) {
+        proc.stderr.on('data', (data: any) => {
+          stderr += data.toString();
+        });
+      }
+
+      proc.on('close', (code: any) => {
+        if (code === 0) {
+          logger.info(`Aspect ratio adjusted: ${outputPath}`);
+          resolve();
+        } else {
+          logger.error('Aspect ratio error:', {
+            exitCode: code,
+            stderr: stderr?.slice(-500) || ''
+          });
+          reject(new Error(`FFmpeg aspect ratio failed with code ${code}`));
+        }
+      });
+
+      proc.on('error', (err: any) => {
+        logger.error('Aspect ratio process error:', err);
         reject(err);
-      })
-      .run();
+      });
+    } catch (error) {
+      logger.error('Aspect ratio setup error:', error);
+      reject(error);
+    }
   });
 }
 
