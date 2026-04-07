@@ -13,16 +13,27 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const { clipId } = req.params;
 
+    logger.info(`Download request for clip: ${clipId}`);
+
     const clip = await getClip(clipId);
 
-    if (!clip || !clip.output_file_path) {
-      return res.status(404).json({ error: 'Clip not found' });
+    if (!clip) {
+      logger.error(`Clip not found in database: ${clipId}`);
+      return res.status(404).json({ error: 'Clip not found in database' });
+    }
+
+    if (!clip.output_file_path) {
+      logger.error(`Clip found but no output_file_path: ${clipId}`, clip);
+      return res.status(404).json({ error: 'Clip file path not set' });
     }
 
     // Check if file exists
     if (!fs.existsSync(clip.output_file_path)) {
-      return res.status(404).json({ error: 'Clip file not found' });
+      logger.error(`Clip file not found at path: ${clip.output_file_path}`);
+      return res.status(404).json({ error: `Clip file not found at: ${clip.output_file_path}` });
     }
+
+    logger.info(`Serving clip file: ${clip.output_file_path}`);
 
     try {
       // Update download count
