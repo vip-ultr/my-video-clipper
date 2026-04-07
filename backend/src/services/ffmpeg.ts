@@ -100,7 +100,9 @@ export function applyBlur(
         '-c:a', 'copy',
         '-c:v', 'libx264',
         '-preset', 'ultrafast',
-        '-crf', '28',
+        '-crf', '35',  // Very low quality for intermediate processing to save memory
+        '-maxrate', '1000k',  // Limit bitrate to reduce memory usage
+        '-bufsize', '1000k',
         '-y',
         outputPath
       ];
@@ -179,7 +181,9 @@ export function resizeAspectRatio(
         '-c:a', 'copy',
         '-c:v', 'libx264',
         '-preset', 'ultrafast',
-        '-crf', '28',
+        '-crf', '35',  // Very low quality for intermediate processing to save memory
+        '-maxrate', '1000k',  // Limit bitrate to reduce memory usage
+        '-bufsize', '1000k',
         '-y',
         outputPath
       ];
@@ -250,8 +254,10 @@ export function burnSubtitles(
         '-vf', filter,
         '-c:a', 'copy',
         '-c:v', 'libx264',
-        '-preset', 'fast',
-        '-crf', '23',
+        '-preset', 'ultrafast',
+        '-crf', '35',  // Low quality for intermediate processing to save memory
+        '-maxrate', '1500k',  // Limit bitrate
+        '-bufsize', '1500k',
         '-y',
         outputPath
       ];
@@ -430,7 +436,9 @@ export function addWatermark(
         '-c:a', 'copy',
         '-c:v', 'libx264',
         '-preset', 'ultrafast',
-        '-crf', '28',
+        '-crf', '35',  // Low quality for intermediate processing to save memory
+        '-maxrate', '1500k',  // Limit bitrate
+        '-bufsize', '1500k',
         '-y',
         outputPath
       ];
