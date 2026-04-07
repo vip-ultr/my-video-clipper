@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Download, Edit2, Trash2, CheckCircle } from 'lucide-react';
+import { Download, Edit2, Trash2, CheckCircle, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 
 export interface ReadyClip {
@@ -30,6 +30,8 @@ export function ClipsReadyView({
   onDelete
 }: ClipsReadyViewProps) {
   const [selectedClips, setSelectedClips] = useState<Set<string>>(new Set());
+  const [downloadingClipId, setDownloadingClipId] = useState<string | null>(null);
+  const [downloadProgress, setDownloadProgress] = useState<number>(0);
 
   const toggleClip = (clipId: string) => {
     const newSelected = new Set(selectedClips);
@@ -123,12 +125,36 @@ export function ClipsReadyView({
               {/* Actions */}
               <div className="flex gap-2">
                 <Button
-                  onClick={() => onDownload(clip.id)}
+                  onClick={async () => {
+                    setDownloadingClipId(clip.id);
+                    setDownloadProgress(0);
+                    try {
+                      // Simulate progress
+                      setDownloadProgress(25);
+                      await onDownload(clip.id);
+                      setDownloadProgress(100);
+                    } finally {
+                      setTimeout(() => {
+                        setDownloadingClipId(null);
+                        setDownloadProgress(0);
+                      }, 1000);
+                    }
+                  }}
+                  disabled={downloadingClipId === clip.id}
                   size="sm"
-                  className="bg-black text-white hover:bg-gray-800"
+                  className="bg-black text-white hover:bg-gray-800 disabled:bg-gray-400 disabled:cursor-not-allowed relative"
                 >
-                  <Download className="w-4 h-4 mr-1" />
-                  Download
+                  {downloadingClipId === clip.id ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                      {downloadProgress}%
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4 mr-1" />
+                      Download
+                    </>
+                  )}
                 </Button>
                 <Button
                   onClick={() => onEdit(clip.id, clip.index)}

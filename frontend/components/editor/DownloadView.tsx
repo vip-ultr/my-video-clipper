@@ -1,15 +1,17 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Download } from 'lucide-react';
+import { CheckCircle, Download, Loader2 } from 'lucide-react';
 
 interface DownloadViewProps {
   clipName: string;
   fileSize: string;
   duration: string;
-  onDownload: () => void;
+  onDownload: () => void | Promise<void>;
   onEditAgain: () => void;
   onNextClip: () => void;
+  isDownloading?: boolean;
+  downloadProgress?: number;
 }
 
 export function DownloadView({
@@ -18,7 +20,9 @@ export function DownloadView({
   duration,
   onDownload,
   onEditAgain,
-  onNextClip
+  onNextClip,
+  isDownloading = false,
+  downloadProgress = 0
 }: DownloadViewProps) {
   return (
     <div className="max-w-2xl mx-auto px-4 py-12 text-center">
@@ -60,13 +64,35 @@ export function DownloadView({
 
       {/* Action Buttons */}
       <div className="space-y-3">
-        <Button
-          onClick={onDownload}
-          className="w-full h-12 text-lg bg-black text-white hover:bg-gray-800"
-        >
-          <Download className="w-5 h-5 mr-2" />
-          Download Now
-        </Button>
+        <div>
+          <Button
+            onClick={onDownload}
+            disabled={isDownloading}
+            className="w-full h-12 text-lg bg-black text-white hover:bg-gray-800 disabled:bg-gray-400 disabled:cursor-not-allowed"
+          >
+            {isDownloading ? (
+              <>
+                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                Downloading... {downloadProgress}%
+              </>
+            ) : (
+              <>
+                <Download className="w-5 h-5 mr-2" />
+                Download Now
+              </>
+            )}
+          </Button>
+
+          {/* Progress Bar */}
+          {isDownloading && downloadProgress > 0 && (
+            <div className="mt-3 w-full bg-gray-200 rounded-full h-2">
+              <div
+                className="bg-black h-2 rounded-full transition-all duration-300"
+                style={{ width: `${downloadProgress}%` }}
+              />
+            </div>
+          )}
+        </div>
 
         <div className="grid grid-cols-2 gap-3">
           <Button

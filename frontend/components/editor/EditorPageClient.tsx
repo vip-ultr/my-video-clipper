@@ -4,6 +4,7 @@ import { Suspense, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEditor } from '@/hooks/useEditor';
 import { useUploadStore } from '@/store/uploadStore';
+import * as api from '@/lib/api';
 import { DownloadView } from '@/components/editor/DownloadView';
 import { VideoPreview } from '@/components/editor/VideoPreview';
 import { ScreenSizeSelector } from '@/components/editor/ScreenSizeSelector';
@@ -56,6 +57,8 @@ function EditorContent() {
   const [createdClip, setCreatedClip] = useState<any>(null);
   const [clipId, setClipId] = useState<string | null>(null);
   const [clipIndex, setClipIndex] = useState(0);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
 
   // Get clip timing from URL params
   const startTime = parseFloat(searchParams.get('start') || '0');
@@ -99,8 +102,43 @@ function EditorContent() {
         clipName={createdClip.clipName}
         fileSize={createdClip.fileSize}
         duration={createdClip.duration}
-        onDownload={() => {
-          window.location.href = `/api/download/${clipId}`;
+        isDownloading={isDownloading}
+        downloadProgress={downloadProgress}
+        onDownload={async () => {
+          if (!clipId) {
+            alert('Clip ID not found');
+            return;
+          }
+
+          try {
+            setIsDownloading(true);
+            setDownloadProgress(0);
+
+            // Fetch the clip file as blob
+            const response = await api.downloadClip(clipId);
+            setDownloadProgress(50);
+
+            // Create blob URL and trigger download
+            const url = window.URL.createObjectURL(response.data);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = createdClip.clipName || `clip-${clipId}.mp4`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+
+            setDownloadProgress(100);
+            console.log('✅ Download complete:', createdClip.clipName);
+          } catch (error) {
+            console.error('❌ Download failed:', error);
+            alert('Download failed. Please try again.');
+            setDownloadProgress(0);
+          } finally {
+            setIsDownloading(false);
+            // Reset progress after a short delay
+            setTimeout(() => setDownloadProgress(0), 1000);
+          }
         }}
         onEditAgain={() => {
           setCreatedClip(null);
