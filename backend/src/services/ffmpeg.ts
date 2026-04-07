@@ -398,41 +398,75 @@ export function addWatermark(
   outputPath: string
 ): Promise<void> {
   return new Promise((resolve, reject) => {
-    // Map positions to FFmpeg filter syntax
-    let overlay = 'overlay=10:10'; // Default: top-left
+    try {
+      // Map positions to FFmpeg filter syntax
+      let overlayPos = '10:10'; // Default: top-left
 
-    switch (position) {
-      case 'top-left':
-        overlay = `overlay=10:10:alpha=${opacity / 100}`;
-        break;
-      case 'top-right':
-        overlay = `overlay=main_w-w-10:10:alpha=${opacity / 100}`;
-        break;
-      case 'bottom-left':
-        overlay = `overlay=10:main_h-h-10:alpha=${opacity / 100}`;
-        break;
-      case 'bottom-right':
-        overlay = `overlay=main_w-w-10:main_h-h-10:alpha=${opacity / 100}`;
-        break;
-    }
+      switch (position) {
+        case 'top-left':
+          overlayPos = '10:10';
+          break;
+        case 'top-right':
+          overlayPos = 'main_w-w-10:10';
+          break;
+        case 'bottom-left':
+          overlayPos = '10:main_h-h-10';
+          break;
+        case 'bottom-right':
+          overlayPos = 'main_w-w-10:main_h-h-10';
+          break;
+      }
 
-    // Scale watermark to size (percentage of video width)
-    const scaleFilter = `scale=iw*${size / 100}:ih*${size / 100}`;
+      // Build filter with watermark scaling and opacity
+      const opacityVal = Math.max(0, Math.min(1, opacity / 100));
+      const watermarkScale = Math.max(0.01, Math.min(0.5, size / 100));
+      const filterComplex = `[1:v]scale=iw*${watermarkScale}:ih*${watermarkScale}[scaled];[0:v][scaled]overlay=${overlayPos}:alpha=${opacityVal}`;
 
-    ffmpeg(inputPath)
-      .input(watermarkPath)
-      .complexFilter([`[1:v]${scaleFilter}[scaled]`, `[0:v][scaled]${overlay}[output]`], ['output'])
-      .output(outputPath)
-      .on('start', (commandLine: any) => logger.debug('FFmpeg command:', commandLine))
-      .on('end', () => {
-        logger.info(`Watermark added: ${outputPath}`);
-        resolve();
-      })
-      .on('error', (err: any) => {
-        logger.error('Watermark error:', err);
+      const ffmpegPath = (typeof ffmpegStatic === 'string' ? ffmpegStatic : 'ffmpeg') as string;
+      const args = [
+        '-i', inputPath,
+        '-i', watermarkPath,
+        '-filter_complex', filterComplex,
+        '-c:a', 'copy',
+        '-c:v', 'libx264',
+        '-preset', 'ultrafast',
+        '-crf', '28',
+        '-y',
+        outputPath
+      ];
+
+      logger.info(`FFmpeg watermark command: ${ffmpegPath} ${args.join(' ')}`);
+
+      const proc = spawn(ffmpegPath, args);
+      let stderr = '';
+
+      if (proc.stderr) {
+        proc.stderr.on('data', (data: any) => {
+          stderr += data.toString();
+        });
+      }
+
+      proc.on('close', (code: any) => {
+        if (code === 0) {
+          logger.info(`Watermark added: ${outputPath}`);
+          resolve();
+        } else {
+          logger.error('Watermark error:', {
+            exitCode: code,
+            stderr: stderr?.slice(-500) || ''
+          });
+          reject(new Error(`FFmpeg watermark failed with code ${code}`));
+        }
+      });
+
+      proc.on('error', (err: any) => {
+        logger.error('Watermark process error:', err);
         reject(err);
-      })
-      .run();
+      });
+    } catch (error) {
+      logger.error('Watermark setup error:', error);
+      reject(error);
+    }
   });
 }
 

@@ -85,12 +85,10 @@ function formatTime(seconds: number): string {
 
 /**
  * Convert subtitle file path for FFmpeg
- * FFmpeg requires escaped colons and slashes on Windows
+ * FFmpeg filter syntax requires forward slashes on Windows
  */
 export function escapeSubtitlePath(filePath: string): string {
-  // On Windows, FFmpeg needs colons escaped
-  if (process.platform === 'win32') {
-    return filePath.replace(/\\/g, '/').replace(/:/g, '\\:');
-  }
-  return filePath;
+  // Convert Windows backslashes to forward slashes for FFmpeg compatibility
+  // FFmpeg prefers forward slashes even on Windows
+  return filePath.replace(/\\/g, '/');
 }
