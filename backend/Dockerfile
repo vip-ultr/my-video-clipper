@@ -1,5 +1,5 @@
 # Use Alpine-based Node.js image (minimal attack surface, fewer vulnerabilities)
-FROM node:22-alpine
+FROM node:20.11.0-alpine3.19
 
 # Install FFmpeg and update system packages for security
 RUN apk update && apk upgrade && apk add --no-cache \
