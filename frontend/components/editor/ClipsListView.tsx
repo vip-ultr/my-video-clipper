@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { ClipItem } from '@/store/uploadStore';
 import * as api from '@/lib/api';
 import { downloadFile } from '@/lib/utils';
+import { BackButton } from '@/components/ui/BackButton';
 
 interface ClipsListViewProps {
   clips: ClipItem[];
@@ -89,6 +90,7 @@ export function ClipsListView({ clips, projectName, videoId }: ClipsListViewProp
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-12">
+      <BackButton href="/upload" label="Back to Upload" />
       {/* Header */}
       <div className="text-center mb-10">
         <CheckCircle className="w-16 h-16 mx-auto mb-4 text-black" />

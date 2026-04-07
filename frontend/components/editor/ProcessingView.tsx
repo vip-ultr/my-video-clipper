@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, AlertCircle, CheckCircle2, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { BackButton } from '@/components/ui/BackButton';
 import { ClipsListView } from '@/components/editor/ClipsListView';
 import { useUploadStore, ClipItem } from '@/store/uploadStore';
 import * as api from '@/lib/api';
@@ -14,13 +15,16 @@ interface ProcessingViewProps {
 
 export function ProcessingView({ videoId }: ProcessingViewProps) {
   const router = useRouter();
-  const { clipCount, projectName, clipDuration, clipStartTimes, clippingMode: storeClippingMode = 'manual-slicing', setGeneratedClips } = useUploadStore();
+  const { clipCount, projectName, clipDuration, clipStartTimes, clippingMode: storeClippingMode = 'manual-slicing', generatedClips, setGeneratedClips } = useUploadStore();
 
   const clippingMode = storeClippingMode === 'ai-detection' ? 'AI' : 'MANUAL';
-  const [status, setStatus] = useState<'idle' | 'analyzing' | 'ready' | 'error'>('idle');
+  // Restore state from store so navigating back doesn't reset the clips list
+  const [status, setStatus] = useState<'idle' | 'analyzing' | 'ready' | 'error'>(
+    () => generatedClips.length > 0 ? 'ready' : 'idle'
+  );
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [clips, setClips] = useState<ClipItem[]>([]);
+  const [clips, setClips] = useState<ClipItem[]>(() => generatedClips);
   const getErrorMessage = (err: unknown, fallback: string) => err instanceof Error ? err.message : fallback;
 
   const handleGenerateClips = async () => {
@@ -37,7 +41,7 @@ export function ProcessingView({ videoId }: ProcessingViewProps) {
         clippingMode,
         clipCount: clipCount || 3,
         clipDuration: clipDuration || undefined,
-        customStartTimes: clippingMode === 'MANUAL' && clipStartTimes.length > 0 ? clipStartTimes : undefined
+        customStartTimes: clippingMode === 'MANUAL' && clipStartTimes.some(t => t.trim()) ? clipStartTimes : undefined
       });
 
       clearInterval(interval);
@@ -61,16 +65,19 @@ export function ProcessingView({ videoId }: ProcessingViewProps) {
   // --- Idle ---
   if (status === 'idle') {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-12 text-center">
-        <Sparkles className="w-16 h-16 mx-auto mb-6 text-black" />
-        <h1 className="text-3xl font-bold mb-2">Ready to Generate Clips</h1>
-        <p className="text-gray-600 mb-8">
-          {clipCount} clip{clipCount !== 1 ? 's' : ''} will be created using{' '}
-          {clippingMode === 'MANUAL' ? 'manual slicing' : 'AI sentiment analysis'}.
-        </p>
-        <Button onClick={handleGenerateClips} className="bg-black text-white hover:bg-gray-800 text-lg h-12 px-8">
-          Generate Clips
-        </Button>
+      <div className="max-w-3xl mx-auto px-4 py-12">
+        <BackButton href="/upload" label="Back to Upload" />
+        <div className="text-center">
+          <Sparkles className="w-16 h-16 mx-auto mb-6 text-black" />
+          <h1 className="text-3xl font-bold mb-2">Ready to Generate Clips</h1>
+          <p className="text-gray-600 mb-8">
+            {clipCount} clip{clipCount !== 1 ? 's' : ''} will be created using{' '}
+            {clippingMode === 'MANUAL' ? 'manual slicing' : 'AI sentiment analysis'}.
+          </p>
+          <Button onClick={handleGenerateClips} className="bg-black text-white hover:bg-gray-800 text-lg h-12 px-8">
+            Generate Clips
+          </Button>
+        </div>
       </div>
     );
   }
@@ -108,6 +115,7 @@ export function ProcessingView({ videoId }: ProcessingViewProps) {
   // --- Error ---
   return (
     <div className="max-w-3xl mx-auto px-4 py-12 text-center">
+      <BackButton href="/upload" label="Back to Upload" />
       <AlertCircle className="w-16 h-16 mx-auto mb-6 text-red-600" />
       <h1 className="text-3xl font-bold mb-2">Error</h1>
       <p className="text-gray-600 mb-8">{error || 'Something went wrong.'}</p>

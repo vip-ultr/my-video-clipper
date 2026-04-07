@@ -9,6 +9,7 @@ import { AlertCircle, CheckCircle2, RefreshCw } from 'lucide-react';
 import { VideoUpload } from '@/components/upload/VideoUpload';
 import { ProjectSettings } from '@/components/upload/ProjectSettings';
 import { UploadProgress } from '@/components/upload/UploadProgress';
+import { BackButton } from '@/components/ui/BackButton';
 
 export default function UploadPage() {
   const router = useRouter();
@@ -33,7 +34,14 @@ export default function UploadPage() {
     uploadVideo
   } = useUpload();
 
-  const { videoId, reset } = useUploadStore();
+  const { videoId, reset, setGeneratedClips } = useUploadStore();
+
+  // Wrap each setting setter to clear old clips whenever the user changes anything.
+  // This ensures ProcessingView starts fresh instead of showing stale results.
+  const handleSettingChange = <T,>(setter: (val: T) => void) => (val: T) => {
+    setGeneratedClips([]);
+    setter(val);
+  };
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -76,6 +84,7 @@ export default function UploadPage() {
   if (videoId && videoFile) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12">
+        <BackButton href="/" label="Back to Home" />
         <h1 className="text-3xl sm:text-4xl font-bold mb-2">Upload Your Video</h1>
         <p className="text-gray-600 mb-8">
           Drag and drop your livestream video or click to browse. Max 1.5GB.
@@ -115,15 +124,15 @@ export default function UploadPage() {
         <form onSubmit={(e) => { e.preventDefault(); router.push('/processing'); }} className="space-y-8">
           <ProjectSettings
             projectName={projectName}
-            onProjectNameChange={setProjectName}
+            onProjectNameChange={handleSettingChange(setProjectName)}
             clippingMode={clippingMode}
-            onClippingModeChange={setClippingMode}
+            onClippingModeChange={handleSettingChange(setClippingMode)}
             clipCount={clipCount}
-            onClipCountChange={setClipCount}
+            onClipCountChange={handleSettingChange(setClipCount)}
             clipDuration={clipDuration}
-            onClipDurationChange={setClipDuration}
+            onClipDurationChange={handleSettingChange(setClipDuration)}
             clipStartTimes={clipStartTimes}
-            onClipStartTimesChange={setClipStartTimes}
+            onClipStartTimesChange={handleSettingChange(setClipStartTimes)}
           />
 
           <div className="flex justify-center">
@@ -141,6 +150,7 @@ export default function UploadPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12">
+      <BackButton href="/" label="Back to Home" />
       <h1 className="text-3xl sm:text-4xl font-bold mb-2">Upload Your Video</h1>
       <p className="text-gray-600 mb-8">
         Drag and drop your livestream video or click to browse. Max 1.5GB.
@@ -165,15 +175,15 @@ export default function UploadPage() {
         {videoFile && (
           <ProjectSettings
             projectName={projectName}
-            onProjectNameChange={setProjectName}
+            onProjectNameChange={handleSettingChange(setProjectName)}
             clippingMode={clippingMode}
-            onClippingModeChange={setClippingMode}
+            onClippingModeChange={handleSettingChange(setClippingMode)}
             clipCount={clipCount}
-            onClipCountChange={setClipCount}
+            onClipCountChange={handleSettingChange(setClipCount)}
             clipDuration={clipDuration}
-            onClipDurationChange={setClipDuration}
+            onClipDurationChange={handleSettingChange(setClipDuration)}
             clipStartTimes={clipStartTimes}
-            onClipStartTimesChange={setClipStartTimes}
+            onClipStartTimesChange={handleSettingChange(setClipStartTimes)}
           />
         )}
 

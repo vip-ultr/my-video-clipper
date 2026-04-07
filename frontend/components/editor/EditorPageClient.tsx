@@ -12,6 +12,7 @@ import { WatermarkSelector } from '@/components/editor/WatermarkSelector';
 import { QualityFpsSelector } from '@/components/editor/QualityFpsSelector';
 import { VideoPreview } from '@/components/editor/VideoPreview';
 import { Button } from '@/components/ui/button';
+import { BackButton } from '@/components/ui/BackButton';
 import { downloadFile } from '@/lib/utils';
 import { Loader2, Download, CheckCircle, AlertCircle } from 'lucide-react';
 
@@ -234,6 +235,7 @@ function EditorContent() {
   if (!isEditAll && singleClipResult) {
     return (
       <div className="max-w-3xl mx-auto px-4 py-12">
+        <BackButton href="/processing" label="Back to Clips" />
         <div className="text-center mb-10">
           <CheckCircle className="w-16 h-16 mx-auto mb-4 text-black" />
           <h1 className="text-3xl font-bold mb-2">Clip Ready</h1>
@@ -306,6 +308,7 @@ function EditorContent() {
   // ── Settings panel (single or edit-all) ──────────────────────────────────
   return (
     <div className="max-w-7xl mx-auto px-4 py-6 sm:py-8">
+      <BackButton href="/processing" label="Back to Clips" />
       <h1 className="text-3xl sm:text-4xl font-bold mb-2">
         {isEditAll ? 'Edit All Clips' : 'Edit Clip'}
       </h1>
