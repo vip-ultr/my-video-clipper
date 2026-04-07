@@ -116,6 +116,13 @@ router.post(
       let clipSuggestions = [];
 
       if (clippingMode === 'MANUAL') {
+        if (!video.duration_seconds || video.duration_seconds <= 0) {
+          return res.status(400).json({
+            success: false,
+            error: 'Invalid or unknown video duration. Please re-upload and try again.'
+          });
+        }
+
         // Manual clipping math:
         // section_duration = total_duration / clip_count
         // each clip starts at section_number * section_duration
