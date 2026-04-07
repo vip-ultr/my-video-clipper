@@ -2,8 +2,6 @@ import express, { Request, Response } from 'express';
 import { getVideo, getClips, saveClip } from '../services/supabase.js';
 import { asyncHandler } from '../middleware/validation.js';
 import { logger } from '../utils/logger.js';
-import { transcribeAudio } from '../services/whisper.js';
-import { analyzeSegmentSentiment, identifyHighEngagementSegments } from '../services/sentiment.js';
 import { randomUUID } from 'crypto';
 
 const router = express.Router();
@@ -103,7 +101,7 @@ router.post(
   '/:videoId/generate-clips',
   asyncHandler(async (req: Request, res: Response) => {
     const { videoId } = req.params;
-    const { clippingMode = 'MANUAL', clipCount = 3, clipDuration = null } = req.body;
+    const { clippingMode = 'MANUAL', clipCount = 3, clipDuration = null, customStartTimes = null } = req.body;
 
     const video = await getVideo(videoId);
     if (!video) {
@@ -116,35 +114,46 @@ router.post(
       let clipSuggestions = [];
 
       if (clippingMode === 'MANUAL') {
-        if (!video.duration_seconds || video.duration_seconds <= 0) {
+        const totalDuration = video.duration_seconds;
+        if (!totalDuration || totalDuration <= 0) {
           return res.status(400).json({
             success: false,
             error: 'Invalid or unknown video duration. Please re-upload and try again.'
           });
         }
 
-        // Manual clipping math:
-        // section_duration = total_duration / clip_count
-        // each clip starts at section_number * section_duration
         const normalizedClipCount = Math.max(1, Math.floor(Number(clipCount) || 1));
-        const sectionDuration = video.duration_seconds / normalizedClipCount;
         const desiredClipDuration = clipDuration && clipDuration > 0
-          ? clipDuration
-          : sectionDuration;
+          ? Number(clipDuration)
+          : Math.floor(totalDuration / normalizedClipCount);
 
-        for (let clipIndex = 0; clipIndex < normalizedClipCount; clipIndex++) {
-          const startTime = Math.floor(clipIndex * sectionDuration);
-          const endTime = Math.min(
-            Math.floor(startTime + desiredClipDuration),
-            video.duration_seconds
-          );
-          if (startTime >= endTime) {
-            continue;
-          }
+        // Parse custom start times if provided (array of "MM:SS" or seconds)
+        const parsedStartTimes: number[] | null =
+          Array.isArray(customStartTimes) && customStartTimes.length > 0
+            ? customStartTimes.map((t: string | number) => {
+                if (typeof t === 'number') return t;
+                const parts = String(t).split(':').map(Number);
+                if (parts.length === 2) return parts[0] * 60 + parts[1];
+                if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+                return Number(t) || 0;
+              })
+            : null;
 
-          // Save clip suggestion to database
+        // Build start times: custom if provided, else sequential from 0
+        const startTimes: number[] = parsedStartTimes
+          ? parsedStartTimes.slice(0, normalizedClipCount)
+          : Array.from({ length: normalizedClipCount }, (_, i) => i * desiredClipDuration);
+
+        let clipIndex = 0;
+        for (const startTime of startTimes) {
+          // Stop if we've gone past the video
+          if (startTime >= totalDuration) break;
+
+          const endTime = Math.min(startTime + desiredClipDuration, totalDuration);
+          if (endTime <= startTime) break;
+
           const clipId = randomUUID();
-          const clipData = {
+          await saveClip({
             id: clipId,
             video_id: videoId,
             project_name: video.project_name,
@@ -173,9 +182,7 @@ router.post(
             is_edited: false,
             created_at: new Date(),
             updated_at: new Date()
-          };
-
-          await saveClip(clipData);
+          });
 
           clipSuggestions.push({
             id: clipId,
@@ -183,9 +190,11 @@ router.post(
             startTime,
             endTime,
             duration: Math.ceil(endTime - startTime),
-            engagementScore: 0.5, // Default for manual clips
-            reason: `Segment ${clipIndex + 1} - ${Math.ceil(endTime - startTime)}s`
+            engagementScore: 0.5,
+            reason: `Clip ${clipIndex + 1} — starts at ${String(Math.floor(startTime / 60)).padStart(2, '0')}:${String(startTime % 60).padStart(2, '0')}, ${Math.ceil(endTime - startTime)}s`
           });
+
+          clipIndex++;
         }
       } else if (clippingMode === 'AI') {
         const totalDuration = video.duration_seconds;

@@ -11,6 +11,7 @@ export function useUpload() {
     clippingMode,
     clipCount,
     clipDuration,
+    clipStartTimes,
     videoId,
     isUploading,
     uploadProgress,
@@ -20,6 +21,7 @@ export function useUpload() {
     setClippingMode,
     setClipCount,
     setClipDuration,
+    setClipStartTimes,
     setVideoId,
     setIsUploading,
     setUploadProgress,
@@ -70,6 +72,7 @@ export function useUpload() {
     clippingMode,
     clipCount,
     clipDuration,
+    clipStartTimes,
     videoId,
     isUploading,
     uploadProgress,
@@ -79,6 +82,7 @@ export function useUpload() {
     setClippingMode,
     setClipCount,
     setClipDuration,
+    setClipStartTimes,
     uploadVideo
   };
 }

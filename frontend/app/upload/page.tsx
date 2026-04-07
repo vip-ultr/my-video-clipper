@@ -20,6 +20,7 @@ export default function UploadPage() {
     clippingMode,
     clipCount,
     clipDuration,
+    clipStartTimes,
     isUploading,
     uploadProgress,
     error,
@@ -28,6 +29,7 @@ export default function UploadPage() {
     setClippingMode,
     setClipCount,
     setClipDuration,
+    setClipStartTimes,
     uploadVideo
   } = useUpload();
 
@@ -120,6 +122,8 @@ export default function UploadPage() {
             onClipCountChange={setClipCount}
             clipDuration={clipDuration}
             onClipDurationChange={setClipDuration}
+            clipStartTimes={clipStartTimes}
+            onClipStartTimesChange={setClipStartTimes}
           />
 
           <div className="flex justify-center">
@@ -168,6 +172,8 @@ export default function UploadPage() {
             onClipCountChange={setClipCount}
             clipDuration={clipDuration}
             onClipDurationChange={setClipDuration}
+            clipStartTimes={clipStartTimes}
+            onClipStartTimesChange={setClipStartTimes}
           />
         )}
 

@@ -26,7 +26,7 @@ interface ClipSuggestion {
 
 export function ProcessingView({ videoId }: ProcessingViewProps) {
   const router = useRouter();
-  const { clipCount, projectName, clipDuration, clippingMode: storeClippingMode = 'manual-slicing' } = useUploadStore();
+  const { clipCount, projectName, clipDuration, clipStartTimes, clippingMode: storeClippingMode = 'manual-slicing' } = useUploadStore();
 
   const clippingMode = storeClippingMode === 'ai-detection' ? 'AI' : 'MANUAL';
   const [status, setStatus] = useState<'idle' | 'analyzing' | 'selecting' | 'downloading' | 'ready' | 'error'>('idle');
@@ -58,7 +58,8 @@ export function ProcessingView({ videoId }: ProcessingViewProps) {
         const response = await api.generateClips(videoId, {
           clippingMode: clippingMode || 'MANUAL',
           clipCount: clipCount || 3,
-          clipDuration: clipDuration || undefined
+          clipDuration: clipDuration || undefined,
+          customStartTimes: clippingMode === 'MANUAL' && clipStartTimes.length > 0 ? clipStartTimes : undefined
         });
 
         clearInterval(generationInterval);

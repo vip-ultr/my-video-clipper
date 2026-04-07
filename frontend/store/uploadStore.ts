@@ -6,6 +6,7 @@ export interface UploadState {
   clippingMode: 'ai-detection' | 'manual-slicing';
   clipCount: number;
   clipDuration: number;
+  clipStartTimes: string[];
   videoId: string | null;
   isUploading: boolean;
   uploadProgress: number;
@@ -16,6 +17,7 @@ export interface UploadState {
   setClippingMode: (mode: 'ai-detection' | 'manual-slicing') => void;
   setClipCount: (count: number) => void;
   setClipDuration: (duration: number) => void;
+  setClipStartTimes: (times: string[]) => void;
   setVideoId: (id: string | null) => void;
   setIsUploading: (uploading: boolean) => void;
   setUploadProgress: (progress: number) => void;
@@ -29,6 +31,7 @@ const initialState = {
   clippingMode: 'ai-detection' as const,
   clipCount: 5,
   clipDuration: 40,
+  clipStartTimes: [],
   videoId: null,
   isUploading: false,
   uploadProgress: 0,
@@ -43,6 +46,7 @@ export const useUploadStore = create<UploadState>((set) => ({
   setClippingMode: (mode) => set({ clippingMode: mode }),
   setClipCount: (count) => set({ clipCount: count }),
   setClipDuration: (duration) => set({ clipDuration: duration }),
+  setClipStartTimes: (times) => set({ clipStartTimes: times }),
   setVideoId: (id) => set({ videoId: id }),
   setIsUploading: (uploading) => set({ isUploading: uploading }),
   setUploadProgress: (progress) => set({ uploadProgress: progress }),

@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { Clock } from 'lucide-react';
 
 interface ProjectSettingsProps {
   projectName: string;
@@ -11,6 +12,8 @@ interface ProjectSettingsProps {
   onClipCountChange: (count: number) => void;
   clipDuration: number;
   onClipDurationChange: (duration: number) => void;
+  clipStartTimes: string[];
+  onClipStartTimesChange: (times: string[]) => void;
 }
 
 export function ProjectSettings({
@@ -21,9 +24,30 @@ export function ProjectSettings({
   clipCount,
   onClipCountChange,
   clipDuration,
-  onClipDurationChange
+  onClipDurationChange,
+  clipStartTimes,
+  onClipStartTimesChange
 }: ProjectSettingsProps) {
   const [clipCountInput, setClipCountInput] = useState(String(clipCount));
+
+  // Keep start times array length in sync with clipCount
+  useEffect(() => {
+    const current = clipStartTimes.slice(0, clipCount);
+    while (current.length < clipCount) current.push('');
+    if (current.join(',') !== clipStartTimes.slice(0, clipCount).join(',') || current.length !== clipStartTimes.length) {
+      onClipStartTimesChange(current);
+    }
+  }, [clipCount]);
+
+  const handleStartTimeChange = (index: number, value: string) => {
+    // Allow only digits and colons
+    const sanitized = value.replace(/[^0-9:]/g, '').slice(0, 5);
+    const updated = [...clipStartTimes];
+    updated[index] = sanitized;
+    onClipStartTimesChange(updated);
+  };
+
+  const allStartTimesEmpty = clipStartTimes.every(t => !t.trim());
 
   return (
     <div className="space-y-6">
@@ -53,7 +77,7 @@ export function ProjectSettings({
             }`}
           >
             <p className="font-semibold text-sm">AI Detection</p>
-            <p className="text-xs">Auto-detect high engagement</p>
+            <p className="text-xs opacity-80">Auto-detect high engagement</p>
           </button>
           <button
             type="button"
@@ -65,7 +89,7 @@ export function ProjectSettings({
             }`}
           >
             <p className="font-semibold text-sm">Manual Slicing</p>
-            <p className="text-xs">Manually select clips</p>
+            <p className="text-xs opacity-80">Cut from start or set timestamps</p>
           </button>
         </div>
       </div>
@@ -109,6 +133,40 @@ export function ProjectSettings({
           ))}
         </div>
       </div>
+
+      {/* Custom Start Times — manual mode only */}
+      {clippingMode === 'manual-slicing' && (
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <Clock className="w-4 h-4 text-gray-500" />
+            <label className="block text-sm font-medium">Clip Start Times</label>
+            <span className="text-xs text-gray-400">(optional)</span>
+          </div>
+          <p className="text-xs text-gray-500 mb-3">
+            Leave blank to cut sequentially from the start of the video. Format: <span className="font-mono">MM:SS</span>
+          </p>
+          <div className="space-y-2">
+            {Array.from({ length: clipCount }).map((_, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <span className="text-sm text-gray-500 w-16 flex-shrink-0">Clip {i + 1}</span>
+                <input
+                  type="text"
+                  placeholder="MM:SS"
+                  value={clipStartTimes[i] ?? ''}
+                  onChange={(e) => handleStartTimeChange(i, e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-black font-mono text-sm"
+                  maxLength={5}
+                />
+              </div>
+            ))}
+          </div>
+          {allStartTimesEmpty && (
+            <p className="text-xs text-gray-400 mt-2">
+              No start times set — clips will be cut from the beginning, one after another.
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
