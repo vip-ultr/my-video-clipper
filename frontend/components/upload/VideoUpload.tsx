@@ -46,7 +46,7 @@ export function VideoUpload({
         />
 
         <Upload className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-        <h3 className="text-lg font-semibold mb-2">
+        <h3 className="text-lg font-semibold mb-2 truncate w-full px-2" title={videoFile?.name}>
           {videoFile ? videoFile.name : 'Drag & drop your video'}
         </h3>
         <p className="text-gray-600">
