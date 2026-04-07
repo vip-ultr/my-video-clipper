@@ -1,5 +1,7 @@
 'use client';
 
+import { useState } from 'react';
+
 interface ProjectSettingsProps {
   projectName: string;
   onProjectNameChange: (name: string) => void;
@@ -21,6 +23,8 @@ export function ProjectSettings({
   clipDuration,
   onClipDurationChange
 }: ProjectSettingsProps) {
+  const [clipCountInput, setClipCountInput] = useState(String(clipCount));
+
   return (
     <div className="space-y-6">
       {/* Project Name */}
@@ -68,18 +72,21 @@ export function ProjectSettings({
 
       {/* Clip Count */}
       <div>
-        <label className="block text-sm font-medium mb-2">
-          Number of Clips: <span className="text-black font-bold">{clipCount}</span>
-        </label>
+        <label className="block text-sm font-medium mb-2">Number of Clips</label>
         <input
-          type="range"
+          type="number"
           min="1"
           max="20"
-          value={clipCount}
-          onChange={(e) => onClipCountChange(Number(e.target.value))}
-          className="w-full"
+          value={clipCountInput}
+          onChange={(e) => setClipCountInput(e.target.value)}
+          onBlur={() => {
+            const clamped = Math.min(20, Math.max(1, Number(clipCountInput) || 1));
+            setClipCountInput(String(clamped));
+            onClipCountChange(clamped);
+          }}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-black"
         />
-        <p className="text-xs text-gray-500 mt-1">Generate 1-20 clips</p>
+        <p className="text-xs text-gray-500 mt-1">Enter a number between 1 and 20</p>
       </div>
 
       {/* Clip Duration */}

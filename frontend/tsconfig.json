@@ -15,6 +15,7 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "jsx": "preserve",
+    "jsxImportSource": "react",
     "moduleResolution": "bundler",
     "paths": {
       "@/*": [

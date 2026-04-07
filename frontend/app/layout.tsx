@@ -1,6 +1,13 @@
 import type { Metadata, Viewport } from 'next';
+import { Inter } from 'next/font/google';
 import { Navbar } from '@/components/layout/Navbar';
 import '@/styles/globals.css';
+
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: 'My Video Clipper - AI-Powered Livestream Video Clipper',
@@ -21,13 +28,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className="bg-white text-black">
+    <html lang="en" className={inter.variable}>
+      <body className="bg-white text-black font-sans">
         <Navbar />
         <main className="flex-1">{children}</main>
         <footer className="border-t border-gray-200 bg-white py-8 mt-16">
           <div className="max-w-7xl mx-auto px-4 text-center text-sm text-gray-600">
-            <p>&copy; 2024 My Video Clipper. All rights reserved.</p>
+            <p>&copy; 2026 My Video Clipper. All rights reserved.</p>
           </div>
         </footer>
       </body>

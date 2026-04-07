@@ -20,11 +20,6 @@ export function HeroSection() {
             Get Started Free
           </Button>
         </Link>
-        <a href="https://github.com/vip-ultr/my-video-clipper" target="_blank" rel="noopener noreferrer">
-          <Button variant="outline" className="text-lg h-12 px-8">
-            View on GitHub
-          </Button>
-        </a>
       </div>
     </section>
   );

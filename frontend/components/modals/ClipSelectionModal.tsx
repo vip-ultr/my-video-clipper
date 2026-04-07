@@ -35,10 +35,7 @@ export function ClipSelectionModal({
 
   const handleSelect = (clip: ClipSuggestion) => {
     setSelectedClipId(clip.id);
-    // Brief delay for visual feedback
-    setTimeout(() => {
-      onSelect(clip);
-    }, 100);
+    onSelect(clip);
   };
 
   const getEngagementColor = (score: number) => {

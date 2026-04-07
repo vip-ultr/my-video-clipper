@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, AlertCircle, CheckCircle2, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -28,79 +28,66 @@ export function ProcessingView({ videoId }: ProcessingViewProps) {
   const router = useRouter();
   const { clipCount, projectName, clipDuration, clippingMode: storeClippingMode = 'manual-slicing' } = useUploadStore();
 
-  // Convert store format to backend format
   const clippingMode = storeClippingMode === 'ai-detection' ? 'AI' : 'MANUAL';
-  const [status, setStatus] = useState<'analyzing' | 'selecting' | 'downloading' | 'ready' | 'error'>('analyzing');
+  const [status, setStatus] = useState<'idle' | 'analyzing' | 'selecting' | 'downloading' | 'ready' | 'error'>('idle');
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [clipSuggestions, setClipSuggestions] = useState<ClipSuggestion[]>([]);
   const [generatedClips, setGeneratedClips] = useState<ReadyClip[]>([]);
-  const [steps, setSteps] = useState({
-    generation: false,
-    selection: false,
-    download: false
-  });
+  const [steps, setSteps] = useState({ generation: false, selection: false, download: false });
   const [showClipSelectionModal, setShowClipSelectionModal] = useState(false);
   const [showDownloadPathModal, setShowDownloadPathModal] = useState(false);
   const [selectedClip, setSelectedClip] = useState<ClipSuggestion | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const getErrorMessage = (err: unknown, fallback: string) => err instanceof Error ? err.message : fallback;
 
-  // Generate clips based on clipping mode
-  useEffect(() => {
-    const generateClips = async () => {
+  const handleGenerateClips = async () => {
+    setStatus('analyzing');
+    setProgress(0);
+    setError(null);
+
+    try {
+      const generationInterval = setInterval(() => {
+        setProgress((prev) => {
+          if (prev < 80) return prev + Math.random() * 15;
+          return prev;
+        });
+      }, 500);
+
       try {
-        // Simulate generation progress
-        const generationInterval = setInterval(() => {
-          setProgress((prev) => {
-            if (prev < 80) return prev + Math.random() * 15;
-            return prev;
-          });
-        }, 500);
+        const response = await api.generateClips(videoId, {
+          clippingMode: clippingMode || 'MANUAL',
+          clipCount: clipCount || 3,
+          clipDuration: clipDuration || undefined
+        });
 
-        setTimeout(async () => {
-          clearInterval(generationInterval);
+        clearInterval(generationInterval);
 
-          try {
-            // Call backend to generate clips based on mode
-            const response = await api.generateClips(videoId, {
-              clippingMode: clippingMode || 'MANUAL',
-              clipCount: clipCount || 3,
-              clipDuration: clipDuration || undefined
-            });
-
-            if (response.data.success && response.data.clips) {
-              setClipSuggestions(response.data.clips);
-              setProgress(100);
-              setSteps(prev => ({ ...prev, generation: true }));
-              setStatus('selecting');
-              setShowClipSelectionModal(true);
-            } else {
-              throw new Error('Failed to generate clips');
-            }
-          } catch (err) {
-            setError(getErrorMessage(err, 'Failed to generate clips'));
-            setStatus('error');
-          }
-        }, 2000);
-
+        if (response.data.success && response.data.clips) {
+          setClipSuggestions(response.data.clips);
+          setProgress(100);
+          setSteps(prev => ({ ...prev, generation: true }));
+          setStatus('selecting');
+          setShowClipSelectionModal(true);
+        } else {
+          throw new Error('Failed to generate clips');
+        }
       } catch (err) {
-        setError(getErrorMessage(err, 'Generation failed'));
+        clearInterval(generationInterval);
+        setError(getErrorMessage(err, 'Failed to generate clips'));
         setStatus('error');
       }
-    };
-
-    generateClips();
-  }, [videoId, clipCount, clipDuration, clippingMode]);
+    } catch (err) {
+      setError(getErrorMessage(err, 'Generation failed'));
+      setStatus('error');
+    }
+  };
 
   const handleClipSelection = (clip: ClipSuggestion) => {
     setSelectedClip(clip);
     setShowClipSelectionModal(false);
     setSteps(prev => ({ ...prev, selection: true }));
-    // Show download path modal with a small delay for smooth transition
-    setTimeout(() => {
-      setShowDownloadPathModal(true);
-    }, 200);
+    setShowDownloadPathModal(true);
   };
 
   const handleDownloadNow = async () => {
@@ -110,7 +97,6 @@ export function ProcessingView({ videoId }: ProcessingViewProps) {
     setStatus('downloading');
 
     try {
-      // Call the quick-download endpoint
       const response = await api.quickDownloadClip(selectedClip.id);
       const url = window.URL.createObjectURL(response.data);
       const a = document.createElement('a');
@@ -121,19 +107,10 @@ export function ProcessingView({ videoId }: ProcessingViewProps) {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
-      // Show success and option to select another clip or finish
       setShowDownloadPathModal(false);
       setSteps(prev => ({ ...prev, download: true }));
       setSelectedClip(null);
-
-      // Option to select another clip or finish
-      setTimeout(() => {
-        if (clipSuggestions.length > 0) {
-          setShowClipSelectionModal(true);
-        } else {
-          setStatus('ready');
-        }
-      }, 500);
+      setStatus('selecting');
     } catch (err) {
       setError(getErrorMessage(err, 'Failed to download clip. Please try again.'));
       setStatus('error');
@@ -144,9 +121,7 @@ export function ProcessingView({ videoId }: ProcessingViewProps) {
 
   const handleEditFirst = () => {
     if (!selectedClip) return;
-
     setShowDownloadPathModal(false);
-    // Navigate to editor with clip timing
     const params = new URLSearchParams({
       start: String(selectedClip.startTime),
       end: String(selectedClip.endTime),
@@ -157,19 +132,37 @@ export function ProcessingView({ videoId }: ProcessingViewProps) {
   };
 
   const handleCloseSelectionModal = () => {
+    setShowClipSelectionModal(false);
     if (generatedClips.length > 0) {
-      // If clips have been created, show them
       setStatus('ready');
     } else {
-      // Otherwise go back to start
-      setShowClipSelectionModal(false);
-      setStatus('analyzing');
+      setStatus('idle');
       setProgress(0);
     }
   };
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-12">
+
+      {/* Idle — wait for user to start */}
+      {status === 'idle' && (
+        <div className="text-center">
+          <Sparkles className="w-16 h-16 mx-auto mb-6 text-black" />
+          <h1 className="text-3xl font-bold mb-2">Ready to Generate Clips</h1>
+          <p className="text-gray-600 mb-8">
+            {clipCount} clip{clipCount !== 1 ? 's' : ''} will be created using{' '}
+            {clippingMode === 'MANUAL' ? 'manual division' : 'AI sentiment analysis'}.
+          </p>
+          <Button
+            onClick={handleGenerateClips}
+            className="bg-black text-white hover:bg-gray-800 text-lg h-12 px-8"
+          >
+            Generate Clips
+          </Button>
+        </div>
+      )}
+
+      {/* Analyzing */}
       {(status === 'analyzing' || status === 'selecting') && !showClipSelectionModal && !showDownloadPathModal && (
         <>
           <div className="text-center mb-12">
@@ -187,7 +180,6 @@ export function ProcessingView({ videoId }: ProcessingViewProps) {
 
           {status === 'analyzing' && (
             <>
-              {/* Progress Bar */}
               <div className="mb-8">
                 <div className="bg-gray-100 rounded-full h-2 mb-4">
                   <div
@@ -198,7 +190,6 @@ export function ProcessingView({ videoId }: ProcessingViewProps) {
                 <p className="text-center text-sm text-gray-500">{Math.round(progress)}% complete</p>
               </div>
 
-              {/* Step Checklist */}
               <div className="space-y-3">
                 <div className={`p-4 border rounded-lg flex items-center gap-3 transition ${
                   steps.generation ? 'border-black bg-gray-50' : 'border-gray-200'
@@ -222,8 +213,6 @@ export function ProcessingView({ videoId }: ProcessingViewProps) {
                 }`}>
                   {steps.selection ? (
                     <CheckCircle2 className="w-5 h-5 text-black flex-shrink-0" />
-                  ) : (status as string) === 'selecting' ? (
-                    <Loader2 className="w-5 h-5 text-gray-400 animate-spin flex-shrink-0" />
                   ) : (
                     <div className="w-5 h-5 flex-shrink-0 text-gray-300">
                       <Sparkles className="w-5 h-5" />
@@ -237,7 +226,7 @@ export function ProcessingView({ videoId }: ProcessingViewProps) {
                 </div>
 
                 {steps.download && (
-                  <div className={`p-4 border rounded-lg flex items-center gap-3 transition border-black bg-gray-50`}>
+                  <div className="p-4 border rounded-lg flex items-center gap-3 transition border-black bg-gray-50">
                     <CheckCircle2 className="w-5 h-5 text-black flex-shrink-0" />
                     <div className="flex-1">
                       <p className="font-semibold text-sm">Download Complete</p>
@@ -249,9 +238,22 @@ export function ProcessingView({ videoId }: ProcessingViewProps) {
               </div>
             </>
           )}
+
+          {/* After generation succeeds, show button to open clip selection */}
+          {status === 'selecting' && (
+            <div className="text-center mt-8">
+              <Button
+                onClick={() => setShowClipSelectionModal(true)}
+                className="bg-black text-white hover:bg-gray-800 text-lg h-12 px-8"
+              >
+                Select a Clip
+              </Button>
+            </div>
+          )}
         </>
       )}
 
+      {/* Downloading */}
       {status === 'downloading' && (
         <div className="text-center py-12">
           <Loader2 className="w-16 h-16 mx-auto mb-6 animate-spin text-black" />
@@ -260,6 +262,7 @@ export function ProcessingView({ videoId }: ProcessingViewProps) {
         </div>
       )}
 
+      {/* Ready */}
       {status === 'ready' && generatedClips.length > 0 && (
         <ClipsReadyView
           clips={generatedClips}
@@ -298,35 +301,33 @@ export function ProcessingView({ videoId }: ProcessingViewProps) {
               setError(`Failed to download the clip: ${getErrorMessage(error, 'Unknown error')}`);
             }
           }}
-          onEdit={(clipId, index) => {
-            const clip = generatedClips.find(c => c.id === clipId);
-            if (clip) {
-              router.push(`/editor?clipId=${clipId}`);
-            }
+          onEdit={(clipId) => {
+            router.push(`/editor?clipId=${clipId}`);
           }}
         />
       )}
 
+      {/* Error */}
       {status === 'error' && (
-        <>
+        <div className="text-center">
           <AlertCircle className="w-16 h-16 mx-auto mb-6 text-red-600" />
-          <h1 className="text-3xl font-bold mb-2 text-center">Error</h1>
-          <p className="text-gray-600 mb-8 text-center">{error || 'Something went wrong.'}</p>
+          <h1 className="text-3xl font-bold mb-2">Error</h1>
+          <p className="text-gray-600 mb-8">{error || 'Something went wrong.'}</p>
           <div className="flex gap-4 justify-center">
             <Button
-              onClick={() => window.location.href = '/upload'}
+              onClick={() => router.push('/upload')}
               className="bg-black text-white hover:bg-gray-800"
             >
               Upload Another Video
             </Button>
             <Button
-              onClick={() => window.location.reload()}
+              onClick={() => { setStatus('idle'); setError(null); setProgress(0); }}
               className="border border-black text-black hover:bg-gray-50"
             >
               Try Again
             </Button>
           </div>
-        </>
+        </div>
       )}
 
       {/* Modals */}
@@ -347,7 +348,7 @@ export function ProcessingView({ videoId }: ProcessingViewProps) {
             id: selectedClip.id,
             index: selectedClip.index,
             filename: `${projectName}-clip-${selectedClip.index}.mp4`,
-            fileSize: 0, // Not used for suggestions
+            fileSize: 0,
             duration: selectedClip.duration
           }}
           onDownloadNow={handleDownloadNow}
