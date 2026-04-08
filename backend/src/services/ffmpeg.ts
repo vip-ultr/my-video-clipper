@@ -284,19 +284,32 @@ function buildForceStyle(style: string, opts: SubtitleStyleOptions = {}): string
   const FONT = 'DejaVu Sans';
 
   const presets: Record<string, string> = {
+    // ── Original styles ───────────────────────────────────────────────────────
+
+    // Bold white with thick outline — draws attention to key phrases
+    emphasis: `Fontname=${FONT},Fontsize=30,Bold=1,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=4,Shadow=2,MarginV=40,Alignment=${alignment}`,
+
+    // Italic white — flowing, natural feel timed to speech rhythm
+    rhythm: `Fontname=${FONT},Fontsize=26,Bold=0,Italic=1,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=2,Shadow=1,MarginV=35,Alignment=${alignment}`,
+
+    // Consistent medium weight — clean and neutral, reads well on any content
+    uniform: `Fontname=${FONT},Fontsize=26,Bold=0,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=2,Shadow=0,MarginV=30,Alignment=${alignment}`,
+
+    // ── New styles ────────────────────────────────────────────────────────────
+
     // Clean white text, thin black outline — safe default for any video
     default: `Fontname=${FONT},Fontsize=24,Bold=0,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=2,Shadow=0,MarginV=30,Alignment=${alignment}`,
 
-    // Slightly larger with drop shadow — classic subtitle look
+    // Slightly larger with drop shadow — classic cinema subtitle look
     classic: `Fontname=${FONT},Fontsize=28,Bold=0,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=3,Shadow=1,MarginV=30,Alignment=${alignment}`,
 
     // Heavy bold yellow — high-contrast for action / sports content
     bold: `Fontname=${FONT},Fontsize=32,Bold=1,PrimaryColour=&H0000FFFF,OutlineColour=&H00000000,Outline=3,Shadow=2,MarginV=30,Alignment=${alignment}`,
 
-    // Small white text, minimal stroke — clean modern look
+    // Small white text, hairline stroke — clean modern documentary look
     minimal: `Fontname=${FONT},Fontsize=22,Bold=0,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=1,Shadow=0,MarginV=30,Alignment=${alignment}`,
 
-    // TikTok-style — large bold text, thick outline, high margin
+    // TikTok-style — large bold text, thick outline, high bottom margin
     tiktok: `Fontname=${FONT},Fontsize=30,Bold=1,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=4,Shadow=2,MarginV=50,Alignment=${alignment}`,
   };
 

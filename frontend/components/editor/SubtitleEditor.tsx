@@ -14,9 +14,14 @@ interface SubtitleEditorProps {
 }
 
 const STYLES = [
-  { value: 'emphasis', label: 'Emphasis' },
-  { value: 'rhythm',   label: 'Rhythm'   },
-  { value: 'uniform',  label: 'Uniform'  },
+  { value: 'emphasis', label: 'Emphasis',  description: 'Bold, thick outline — grabs attention' },
+  { value: 'rhythm',   label: 'Rhythm',    description: 'Italic, natural speech feel' },
+  { value: 'uniform',  label: 'Uniform',   description: 'Consistent, neutral — works on anything' },
+  { value: 'default',  label: 'Default',   description: 'Clean white, thin outline' },
+  { value: 'classic',  label: 'Classic',   description: 'Drop shadow, cinema look' },
+  { value: 'bold',     label: 'Bold',      description: 'Yellow bold, high contrast' },
+  { value: 'minimal',  label: 'Minimal',   description: 'Small, hairline stroke' },
+  { value: 'tiktok',   label: 'TikTok',    description: 'Large bold, thick outline' },
 ];
 
 const POSITIONS = [
@@ -57,22 +62,17 @@ export function SubtitleEditor({
           {/* Style */}
           <div>
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Style</p>
-            <div className="grid grid-cols-3 gap-2">
+            <select
+              value={style}
+              onChange={(e) => onStyleChange(e.target.value)}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none focus:border-gray-400 transition cursor-pointer"
+            >
               {STYLES.map((s) => (
-                <button
-                  key={s.value}
-                  type="button"
-                  onClick={() => onStyleChange(s.value)}
-                  className={`py-2 rounded-lg border-2 text-xs font-semibold transition ${
-                    style === s.value
-                      ? 'border-black bg-black text-white'
-                      : 'border-gray-200 text-gray-600 hover:border-gray-400'
-                  }`}
-                >
-                  {s.label}
-                </button>
+                <option key={s.value} value={s.value}>
+                  {s.label} — {s.description}
+                </option>
               ))}
-            </div>
+            </select>
           </div>
 
           {/* Colors */}
