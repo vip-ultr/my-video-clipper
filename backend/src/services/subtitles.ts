@@ -179,7 +179,13 @@ export async function generateSubtitles(
 }
 
 export function escapeSubtitlePath(filePath: string): string {
-  return filePath.replace(/\\/g, '/');
+  // Convert backslashes to forward slashes
+  let p = filePath.replace(/\\/g, '/');
+  // FFmpeg's subtitle filter treats ':' as an option separator, so the Windows
+  // drive letter colon must be escaped (e.g. C:/... → C\:/...)
+  // On Linux paths (starting with '/') this regex won't match — safe either way.
+  p = p.replace(/^([A-Za-z]):/, '$1\\:');
+  return p;
 }
 
 // ─── Segment-level subtitle generation (returns SRT string) ──────────────────

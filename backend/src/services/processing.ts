@@ -61,10 +61,17 @@ export async function processClip(settings: ClipSettings): Promise<{ success: bo
     if (settings.blurEnabled) {
       logger.info('Step 2: Applying blur...');
       const blurredPath = path.join(tempDir, `blurred-${clipFileName}`);
-      await ffmpegService.applyBlur(currentInput, settings.blurStrength, blurredPath);
-      fs.unlinkSync(currentInput); // Clean up previous temp file
-      currentInput = blurredPath;
-      wasReencoded = true;
+      try {
+        await ffmpegService.applyBlur(currentInput, settings.blurStrength, blurredPath);
+        fs.unlinkSync(currentInput);
+        currentInput = blurredPath;
+        wasReencoded = true;
+        logger.info('Blur applied successfully');
+      } catch (blurError) {
+        logger.error('Blur failed, continuing without blur:', blurError);
+        // Clean up incomplete output if it exists
+        if (fs.existsSync(blurredPath)) try { fs.unlinkSync(blurredPath); } catch {}
+      }
     }
 
     // Step 3: Adjust aspect ratio (skip if 1:1 to reduce memory usage)
