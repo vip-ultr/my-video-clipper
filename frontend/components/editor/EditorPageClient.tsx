@@ -100,7 +100,7 @@ function EditAllResults({ clips, projectName }: { clips: EditedClip[]; projectNa
           return (
             <div key={clip.id} className="p-4 border border-gray-200 rounded-lg flex items-center gap-4">
               <div className="flex-1 min-w-0">
-                <p className="font-semibold">Clip {clip.index + 1}</p>
+                <p className="font-semibold">Clip {clip.index}</p>
                 <p className="text-sm text-gray-500 truncate">{clip.filename}</p>
                 {s.downloading && s.progress > 0 && (
                   <div className="mt-2 bg-gray-100 rounded-full h-1.5">
@@ -209,7 +209,7 @@ function EditorContent() {
   const handleCreateSingle = async () => {
     if (!videoId) return;
     setSingleError(null);
-    const result = await createClip(videoId, startTime, endTime, clipIndex, projectName, clipIndex > 0);
+    const result = await createClip(videoId, startTime, endTime, clipIndex, projectName, true);
     if (result?.clip) setSingleClipResult({ clipId: result.clip.id, filename: result.clip.filename });
   };
 
@@ -258,7 +258,7 @@ function EditorContent() {
     for (let i = 0; i < clips.length; i++) {
       const clip = clips[i];
       const result = await createClip(videoId, clip.startTime, clip.endTime, clip.index, projectName, true);
-      if (result?.clip) results.push({ id: result.clip.id, index: clip.index, filename: result.clip.filename || `${projectName}-clip-${clip.index + 1}.mp4` });
+      if (result?.clip) results.push({ id: result.clip.id, index: clip.index, filename: result.clip.filename || `${projectName}-clip-${clip.index}.mp4` });
       setEditAllProgress({ done: i + 1, total: clips.length });
     }
     if (results.length === 0) { setEditAllError('No clips were successfully processed.'); setEditAllStatus('settings'); return; }

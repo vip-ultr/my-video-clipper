@@ -151,7 +151,7 @@ router.post(
           ? parsedStartTimes.slice(0, normalizedClipCount)
           : Array.from({ length: normalizedClipCount }, (_, i) => i * desiredClipDuration);
 
-        let clipIndex = 0;
+        let clipIndex = 1;
         for (let i = 0; i < startTimes.length; i++) {
           const startTime = startTimes[i];
           // Stop if we've gone past the video
@@ -201,7 +201,7 @@ router.post(
             endTime,
             duration: Math.ceil(endTime - startTime),
             engagementScore: 0.5,
-            reason: `Clip ${clipIndex + 1} — starts at ${String(Math.floor(startTime / 60)).padStart(2, '0')}:${String(startTime % 60).padStart(2, '0')}, ${Math.ceil(endTime - startTime)}s`
+            reason: `Clip ${clipIndex} — starts at ${String(Math.floor(startTime / 60)).padStart(2, '0')}:${String(startTime % 60).padStart(2, '0')}, ${Math.ceil(endTime - startTime)}s`
           });
 
           clipIndex++;
@@ -255,7 +255,7 @@ router.post(
         // Sort selected clips by start time for natural ordering
         selected.sort((a, b) => a.start - b.start);
 
-        let clipIndex = 0;
+        let clipIndex = 1;
         for (const segment of selected) {
           const clipId = randomUUID();
           const clipData = {

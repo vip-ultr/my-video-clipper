@@ -44,7 +44,7 @@ export function ClipsListView({ clips, projectName, videoId }: ClipsListViewProp
       const response = await api.quickDownloadClip(clip.id, (pct) =>
         setClipState(clip.id, { progress: pct })
       );
-      await downloadFile(response.data, `${projectName}-clip-${clip.index + 1}.mp4`);
+      await downloadFile(response.data, `${projectName}-clip-${clip.index}.mp4`);
       setClipState(clip.id, { status: 'done', progress: 100 });
     } catch {
       setClipState(clip.id, { status: 'error', progress: 0 });
@@ -62,7 +62,7 @@ export function ClipsListView({ clips, projectName, videoId }: ClipsListViewProp
           const overall = Math.round(((i + pct / 100) / clips.length) * 100);
           setDownloadAllState(prev => ({ ...prev, progress: overall }));
         });
-        await downloadFile(response.data, `${projectName}-clip-${clip.index + 1}.mp4`);
+        await downloadFile(response.data, `${projectName}-clip-${clip.index}.mp4`);
         setClipState(clip.id, { status: 'done', progress: 100 });
         setDownloadAllState(prev => ({ ...prev, done: i + 1, progress: Math.round(((i + 1) / clips.length) * 100) }));
       } catch {
@@ -110,7 +110,7 @@ export function ClipsListView({ clips, projectName, videoId }: ClipsListViewProp
               <div className="flex items-center gap-4">
                 {/* Clip info */}
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold">Clip {clip.index + 1}</p>
+                  <p className="font-semibold">Clip {clip.index}</p>
                   <p className="text-sm text-gray-500">
                     {formatTime(clip.startTime)} → {formatTime(clip.endTime)} · {clip.duration}s
                     {clip.engagementScore > 0.5 && (
