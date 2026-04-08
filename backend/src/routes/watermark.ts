@@ -1,7 +1,7 @@
 import express, { Request, Response } from 'express';
 import multer from 'multer';
 import fs from 'fs';
-import { saveCustomWatermark, getCustomWatermarks, deleteCustomWatermark, uploadWatermarkToStorage } from '../services/supabase.js';
+import { saveCustomWatermark, getCustomWatermarks, deleteCustomWatermark, uploadWatermarkToStorage, downloadWatermarkFromStorage } from '../services/supabase.js';
 import { config } from '../utils/config.js';
 import { asyncHandler } from '../middleware/validation.js';
 import { logger } from '../utils/logger.js';
@@ -96,37 +96,37 @@ router.get(
   })
 );
 
-// Get watermark preview
+// Get watermark image — streams from Supabase Storage
+// GET /api/watermark/preview?id=default  OR  ?id=<watermarkId>
 router.get(
   '/preview',
   asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.query;
-
     if (!id || typeof id !== 'string') {
       return res.status(400).json({ error: 'Watermark ID is required' });
     }
 
-    // Special case for default watermark
+    // Default watermark lives in the public-watermark bucket
     if (id === 'default') {
-      return res.sendFile(`${config.paths.watermarksDir}/default-watermark.png`);
+      const buffer = await downloadWatermarkFromStorage('public-watermark', 'default-watermark.png');
+      if (!buffer) return res.status(404).json({ error: 'Default watermark not found in storage' });
+      res.setHeader('Content-Type', 'image/png');
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+      return res.send(buffer);
     }
 
-    const watermarkPath = `${config.paths.watermarksDir}/${id}.png`;
-
-    if (!fs.existsSync(watermarkPath)) {
-      // Try with other extensions
-      const dir = config.paths.watermarksDir;
-      const files = fs.readdirSync(dir);
-      const watermarkFile = files.find(f => f.startsWith(id));
-
-      if (!watermarkFile) {
-        return res.status(404).json({ error: 'Watermark not found' });
+    // Custom watermarks — try common extensions
+    for (const ext of ['png', 'jpg', 'jpeg', 'webp']) {
+      const buffer = await downloadWatermarkFromStorage('watermarks', `${id}.${ext}`);
+      if (buffer) {
+        const mime = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : `image/${ext}`;
+        res.setHeader('Content-Type', mime);
+        res.setHeader('Cache-Control', 'public, max-age=86400');
+        return res.send(buffer);
       }
-
-      return res.sendFile(`${dir}/${watermarkFile}`);
     }
 
-    res.sendFile(watermarkPath);
+    return res.status(404).json({ error: 'Watermark not found' });
   })
 );
 

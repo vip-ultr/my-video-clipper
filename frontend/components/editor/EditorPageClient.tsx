@@ -307,93 +307,108 @@ function EditorContent() {
   }
 
   // ── Settings panel (single or edit-all) ──────────────────────────────────
+
+  const processButton = isEditAll ? (
+    <Button
+      onClick={handleStartEditAll}
+      disabled={isProcessing || !videoId || !generatedClips.length}
+      className="bg-black text-white hover:bg-gray-800 h-12 px-10 text-base font-semibold"
+    >
+      {isProcessing
+        ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Processing...</>
+        : `Process All (${generatedClips.length} clips)`}
+    </Button>
+  ) : (
+    <Button
+      onClick={handleCreateSingle}
+      disabled={isProcessing || !videoId}
+      className="bg-black text-white hover:bg-gray-800 h-12 px-10 text-base font-semibold"
+    >
+      {isProcessing
+        ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Processing...</>
+        : 'Process Clip'}
+    </Button>
+  );
+
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6 sm:py-8">
-      <BackButton href="/processing" label="Back to Clips" />
-      <h1 className="text-3xl sm:text-4xl font-bold mb-2">
-        {isEditAll ? 'Edit All Clips' : 'Edit Clip'}
-      </h1>
+    <div className="max-w-6xl mx-auto px-4 py-6">
+
+      {/* ── Header ── */}
+      <div className="flex items-center gap-4 mb-6">
+        <BackButton href="/processing" label="Back to Clips" />
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">
+          {isEditAll ? 'Edit All Clips' : 'Edit Clip'}
+        </h1>
+      </div>
+
+      {/* ── Error banner ── */}
+      {(error || editAllError) && (
+        <div className="mb-5 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-red-800 text-sm">{error || editAllError}</p>
+        </div>
+      )}
+
       {isEditAll && (
-        <p className="text-gray-500 mb-8">
-          Set your preferences below — these settings will apply to all {generatedClips.length} clips.
+        <p className="text-gray-500 text-sm mb-6">
+          Settings below apply to all {generatedClips.length} clips.
         </p>
       )}
 
-      {(error || editAllError) && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded">
-          <p className="text-red-800">{error || editAllError}</p>
+      {/* ── Video Preview (single-clip only) ── */}
+      {!isEditAll && (
+        <div className="flex justify-center mb-8">
+          <div className="w-full max-w-sm">
+            <VideoPreview
+              aspectRatio={aspectRatio}
+              quality={quality}
+              fps={fps}
+              videoId={videoId}
+              startTime={startTime}
+              endTime={endTime}
+              blurEnabled={blurEnabled}
+              blurStrength={blurStrength}
+              subtitlesEnabled={subtitlesEnabled}
+              subtitleStyle={subtitleStyle}
+              subtitlePrimaryColor={subtitlePrimaryColor}
+              subtitlePosition={subtitlePosition}
+              subtitleUppercase={subtitleUppercase}
+              watermarkType={watermarkType}
+              watermarkId={watermarkId}
+              watermarkPosition={watermarkPosition}
+              watermarkSize={watermarkSize}
+              watermarkOpacity={watermarkOpacity}
+            />
+          </div>
         </div>
       )}
 
-      <div className="grid lg:grid-cols-3 gap-8">
-        {!isEditAll && (
-          <div className="lg:col-span-2">
-            <VideoPreview
-            aspectRatio={aspectRatio}
-            quality={quality}
-            fps={fps}
-            videoId={videoId}
-            startTime={startTime}
-            endTime={endTime}
-            blurEnabled={blurEnabled}
-            blurStrength={blurStrength}
-            subtitlesEnabled={subtitlesEnabled}
-            subtitleStyle={subtitleStyle}
-            subtitlePrimaryColor={subtitlePrimaryColor}
-            subtitlePosition={subtitlePosition}
-            subtitleUppercase={subtitleUppercase}
-            watermarkType={watermarkType}
-            watermarkPosition={watermarkPosition}
-            watermarkSize={watermarkSize}
-            watermarkOpacity={watermarkOpacity}
-          />
-          </div>
-        )}
-
-        <div className={isEditAll ? 'lg:col-span-3 grid sm:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-6'}>
-          <ScreenSizeSelector value={aspectRatio} onChange={setAspectRatio} />
-          <QualityFpsSelector quality={quality} onQualityChange={setQuality} fps={fps} onFpsChange={setFps} />
-          <SubtitleEditor
-            enabled={subtitlesEnabled} onEnabledChange={setSubtitlesEnabled}
-            style={subtitleStyle} onStyleChange={setSubtitleStyle}
-            primaryColor={subtitlePrimaryColor} onPrimaryColorChange={setSubtitlePrimaryColor}
-            secondaryColor={subtitleSecondaryColor} onSecondaryColorChange={setSubtitleSecondaryColor}
-            position={subtitlePosition} onPositionChange={setSubtitlePosition}
-            uppercase={subtitleUppercase} onUppercaseChange={setSubtitleUppercase}
-          />
-          <BlurControl enabled={blurEnabled} onEnabledChange={setBlurEnabled} strength={blurStrength} onStrengthChange={setBlurStrength} />
-          <WatermarkSelector
-            watermarkType={watermarkType} onWatermarkTypeChange={setWatermarkType}
-            watermarkId={watermarkId} onWatermarkIdChange={setWatermarkId}
-            watermarkPosition={watermarkPosition} onWatermarkPositionChange={setWatermarkPosition}
-            watermarkSize={watermarkSize} onWatermarkSizeChange={setWatermarkSize}
-            watermarkOpacity={watermarkOpacity} onWatermarkOpacityChange={setWatermarkOpacity}
-          />
-        </div>
+      {/* ── Controls grid ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+        <ScreenSizeSelector value={aspectRatio} onChange={setAspectRatio} />
+        <QualityFpsSelector quality={quality} onQualityChange={setQuality} fps={fps} onFpsChange={setFps} />
+        <BlurControl enabled={blurEnabled} onEnabledChange={setBlurEnabled} strength={blurStrength} onStrengthChange={setBlurStrength} />
+        <SubtitleEditor
+          enabled={subtitlesEnabled} onEnabledChange={setSubtitlesEnabled}
+          style={subtitleStyle} onStyleChange={setSubtitleStyle}
+          primaryColor={subtitlePrimaryColor} onPrimaryColorChange={setSubtitlePrimaryColor}
+          secondaryColor={subtitleSecondaryColor} onSecondaryColorChange={setSubtitleSecondaryColor}
+          position={subtitlePosition} onPositionChange={setSubtitlePosition}
+          uppercase={subtitleUppercase} onUppercaseChange={setSubtitleUppercase}
+        />
       </div>
 
-      <div className="mt-8 flex justify-center">
-        {isEditAll ? (
-          <Button
-            onClick={handleStartEditAll}
-            disabled={isProcessing || !videoId || !generatedClips.length}
-            className="bg-black text-white hover:bg-gray-800 h-12 px-10 text-lg"
-          >
-            {isProcessing
-              ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Processing...</>
-              : `Start Edit (${generatedClips.length} clips)`}
-          </Button>
-        ) : (
-          <Button
-            onClick={handleCreateSingle}
-            disabled={isProcessing || !videoId}
-            className="bg-black text-white hover:bg-gray-800 h-12 px-10 text-lg"
-          >
-            {isProcessing
-              ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Processing...</>
-              : 'Process Clip'}
-          </Button>
-        )}
+      {/* ── Watermark (full width) ── */}
+      <WatermarkSelector
+        watermarkType={watermarkType} onWatermarkTypeChange={setWatermarkType}
+        watermarkId={watermarkId} onWatermarkIdChange={setWatermarkId}
+        watermarkPosition={watermarkPosition} onWatermarkPositionChange={setWatermarkPosition}
+        watermarkSize={watermarkSize} onWatermarkSizeChange={setWatermarkSize}
+        watermarkOpacity={watermarkOpacity} onWatermarkOpacityChange={setWatermarkOpacity}
+      />
+
+      {/* ── Process button ── */}
+      <div className="mt-6 flex justify-center">
+        {processButton}
       </div>
     </div>
   );

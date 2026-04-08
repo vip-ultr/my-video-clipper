@@ -159,8 +159,8 @@ export function WatermarkSelector({
       )}
 
       {watermarkType !== 'none' && (
-        <div className="space-y-4 pt-1">
-          {/* Position grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 pt-1">
+          {/* Position */}
           <div>
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Position</p>
             <div className="grid grid-cols-2 gap-2">
@@ -191,6 +191,7 @@ export function WatermarkSelector({
               type="range" min="5" max="50" step="1"
               value={watermarkSize}
               onChange={(e) => onWatermarkSizeChange(Number(e.target.value))}
+              className="w-full"
             />
             <div className="flex justify-between text-xs text-gray-400 mt-1.5">
               <span>5%</span><span>50%</span>
@@ -207,6 +208,7 @@ export function WatermarkSelector({
               type="range" min="0" max="100" step="1"
               value={watermarkOpacity}
               onChange={(e) => onWatermarkOpacityChange(Number(e.target.value))}
+              className="w-full"
             />
             <div className="flex justify-between text-xs text-gray-400 mt-1.5">
               <span>Transparent</span><span>Solid</span>
