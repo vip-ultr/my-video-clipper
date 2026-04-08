@@ -262,7 +262,7 @@ function hexToASS(hex: string): string {
 
 interface SubtitleStyleOptions {
   primaryColor?: string; // CSS hex e.g. "#FFFFFF"
-  /** User-chosen size in CSS px (default 18). Used directly as ASS Fontsize. */
+  /** User-chosen size in CSS px (default 14). Used directly as ASS Fontsize. */
   subtitleSize?: number;
 }
 
@@ -278,18 +278,18 @@ function cssPxToAssSize(cssSize: number): number {
 function buildForceStyle(style: string, opts: SubtitleStyleOptions = {}): string {
   // Fontname=DejaVu Sans: available on Alpine via font-dejavu (installed in Dockerfile).
   const FONT = 'DejaVu Sans';
-  const sz = cssPxToAssSize(opts.subtitleSize ?? 18);
+  const sz = cssPxToAssSize(opts.subtitleSize ?? 14);
   const MARGIN = 30; // px from edge; applies to both top and bottom depending on \an tag
 
   const presets: Record<string, string> = {
-    emphasis: `Fontname=${FONT},Fontsize=${sz},Bold=1,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=4,Shadow=2,MarginV=${MARGIN}`,
-    rhythm:   `Fontname=${FONT},Fontsize=${sz},Bold=0,Italic=1,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=2,Shadow=1,MarginV=${MARGIN}`,
-    uniform:  `Fontname=${FONT},Fontsize=${sz},Bold=0,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=2,Shadow=0,MarginV=${MARGIN}`,
-    default:  `Fontname=${FONT},Fontsize=${sz},Bold=0,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=2,Shadow=0,MarginV=${MARGIN}`,
-    classic:  `Fontname=${FONT},Fontsize=${sz},Bold=0,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=3,Shadow=1,MarginV=${MARGIN}`,
-    bold:     `Fontname=${FONT},Fontsize=${sz},Bold=1,PrimaryColour=&H0000FFFF,OutlineColour=&H00000000,Outline=3,Shadow=2,MarginV=${MARGIN}`,
-    minimal:  `Fontname=${FONT},Fontsize=${sz},Bold=0,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=1,Shadow=0,MarginV=${MARGIN}`,
-    tiktok:   `Fontname=${FONT},Fontsize=${sz},Bold=1,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=4,Shadow=2,MarginV=${MARGIN}`,
+    emphasis: `Fontname=${FONT},Fontsize=${sz},Bold=1,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=4,MarginV=${MARGIN}`,
+    rhythm:   `Fontname=${FONT},Fontsize=${sz},Bold=0,Italic=1,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=1,MarginV=${MARGIN}`,
+    uniform:  `Fontname=${FONT},Fontsize=${sz},Bold=0,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=2,MarginV=${MARGIN}`,
+    default:  `Fontname=${FONT},Fontsize=${sz},Bold=0,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=2,MarginV=${MARGIN}`,
+    classic:  `Fontname=${FONT},Fontsize=${sz},Bold=0,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=3,MarginV=${MARGIN}`,
+    bold:     `Fontname=${FONT},Fontsize=${sz},Bold=1,PrimaryColour=&H0000FFFF,OutlineColour=&H00000000,Outline=3,MarginV=${MARGIN}`,
+    minimal:  `Fontname=${FONT},Fontsize=${sz},Bold=0,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=1,MarginV=${MARGIN}`,
+    tiktok:   `Fontname=${FONT},Fontsize=${sz},Bold=1,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=4,MarginV=${MARGIN}`,
   };
 
   let base = presets[style] ?? presets['default'];
@@ -308,7 +308,7 @@ export function burnSubtitles(
   subtitlePath: string,
   outputPath: string,
   style: string = 'default',
-  subtitleSize: number = 18,
+  subtitleSize: number = 14,
   primaryColor?: string
 ): Promise<void> {
   return new Promise((resolve, reject) => {
