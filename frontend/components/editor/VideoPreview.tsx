@@ -131,7 +131,7 @@ function watermarkPositionStyle(position: string, size: number): React.CSSProper
 
 export function VideoPreview({
   aspectRatio, quality, fps,
-  videoId, startTime = 0,
+  videoId, startTime = 0, endTime,
   blurEnabled = false, blurStrength = 15,
   subtitlesEnabled = false, subtitleStyle = 'default', subtitlePrimaryColor, subtitlePosition = 'bottom', subtitleUppercase = false,
   watermarkType = 'none', watermarkPosition = 'bottom-right', watermarkSize = 20, watermarkOpacity = 80,
@@ -139,10 +139,14 @@ export function VideoPreview({
   const fgRef = useRef<HTMLVideoElement>(null);
   const bgRef = useRef<HTMLVideoElement>(null);
 
-  const streamUrl = videoId ? `${API_BASE}/upload/${videoId}/stream` : null;
+  // Use the preview-clip endpoint — stream-copied segment, starts at 0, no seeking needed
+  const clipUrl = (videoId && endTime && endTime > startTime)
+    ? `${API_BASE}/upload/${videoId}/preview-clip?start=${startTime}&end=${endTime}`
+    : null;
+
   const aspectClass = ASPECT_RATIO_STYLE[aspectRatio] ?? ASPECT_RATIO_STYLE['16:9'];
   const aspectLabel = ASPECT_LABEL[aspectRatio] ?? aspectRatio;
-  const blurPx = Math.round((blurStrength / 50) * 24); // map 0-50 → 0-24px CSS blur
+  const blurPx = Math.round((blurStrength / 50) * 24); // 0–50 → 0–24px CSS blur
 
   // Keep bg video in sync with fg video
   const syncBg = useCallback(() => {
@@ -154,17 +158,19 @@ export function VideoPreview({
   useEffect(() => {
     const fg = fgRef.current;
     if (!fg) return;
-    fg.addEventListener('play',   () => { bgRef.current?.play().catch(() => {}); });
-    fg.addEventListener('pause',  () => { bgRef.current?.pause(); });
+    const onPlay   = () => { bgRef.current?.play().catch(() => {}); };
+    const onPause  = () => { bgRef.current?.pause(); };
+    fg.addEventListener('play',   onPlay);
+    fg.addEventListener('pause',  onPause);
     fg.addEventListener('seeked', syncBg);
+    return () => {
+      fg.removeEventListener('play',   onPlay);
+      fg.removeEventListener('pause',  onPause);
+      fg.removeEventListener('seeked', syncBg);
+    };
   }, [syncBg]);
 
-  // Seek to clip start once metadata loads
-  const handleMetadata = (e: React.SyntheticEvent<HTMLVideoElement>) => {
-    (e.target as HTMLVideoElement).currentTime = startTime;
-  };
-
-  // Build subtitle text style — override primaryColor if custom
+  // Build subtitle text style — override primaryColor + uppercase if set
   const subStyle: React.CSSProperties = {
     ...(SUBTITLE_STYLES[subtitleStyle] ?? SUBTITLE_STYLES['default']),
     ...(subtitlePrimaryColor ? { color: subtitlePrimaryColor } : {}),
@@ -180,32 +186,30 @@ export function VideoPreview({
       <div className="bg-gray-950 rounded-xl overflow-hidden flex items-center justify-center p-4">
         <div className={`w-full ${aspectClass} rounded-lg overflow-hidden relative bg-black`}>
 
-          {streamUrl ? (
+          {clipUrl ? (
             <>
               {/* ── Blur background layer (only when blur enabled) ── */}
               {blurEnabled && (
                 <video
                   ref={bgRef}
-                  src={streamUrl}
+                  src={clipUrl}
                   muted
                   playsInline
                   preload="metadata"
                   className="absolute inset-0 w-full h-full pointer-events-none"
                   style={{ objectFit: 'cover', filter: `blur(${blurPx}px)`, transform: 'scale(1.05)' }}
-                  onLoadedMetadata={(e) => { (e.target as HTMLVideoElement).currentTime = startTime; }}
                 />
               )}
 
               {/* ── Foreground video ── */}
               <video
                 ref={fgRef}
-                src={streamUrl}
+                src={clipUrl}
                 controls
                 playsInline
-                preload="metadata"
+                preload="auto"
                 className="absolute inset-0 w-full h-full"
                 style={{ objectFit: blurEnabled ? 'contain' : 'cover' }}
-                onLoadedMetadata={handleMetadata}
               />
 
               {/* ── Subtitle overlay ── */}
