@@ -260,54 +260,36 @@ function hexToASS(hex: string): string {
   return `&H00${b}${g}${r}`.toUpperCase();
 }
 
-// ASS Alignment: 2=bottom-center, 8=top-center, 5=mid-center
-function positionToAlignment(position: string): number {
-  switch (position) {
-    case 'top':    return 8;
-    case 'center': return 5;
-    default:       return 2; // bottom
-  }
-}
-
 interface SubtitleStyleOptions {
   primaryColor?: string; // CSS hex e.g. "#FFFFFF"
-  position?: string;     // 'bottom' | 'top' | 'center'
-  /** User-chosen size in CSS px (default 18). Scaled to ASS Fontsize via calibration. */
+  /** User-chosen size in CSS px (default 18). Used directly as ASS Fontsize. */
   subtitleSize?: number;
 }
 
-// CSS px → ASS Fontsize calibration.
-// The preview renders on a ~490px-tall container (max-h-[520px] minus controls).
-// ASS Fontsize units are roughly 1/72 of the video height in points.
-// For a 1920-px-tall 9:16 master: assSize = cssSize * (1920 / 490) * 0.72 ≈ cssSize * 2.82
-// We use a single linear factor tuned so that 18 CSS px ≈ ASS 24 (existing default).
-// factor = 24 / 18 ≈ 1.33 ... but that was too small. Calibrated against real output:
-// 18 CSS px on a 490-px preview ≈ 24 ASS on a 1080-px video (ratio 1080/490 * 0.5 ≈ 1.1).
-// Settled on factor = 1.0 so users get direct 1-to-1 control at a sane base size.
-// For the 9:16 1920-tall canvas the visible text scales naturally via ASS PlayResY=288 default.
+// CSS px → ASS Fontsize: use directly (1:1 mapping gives matching visual size).
 function cssPxToAssSize(cssSize: number): number {
   return Math.round(Math.max(8, cssSize));
 }
 
-// Named style presets — each returns an ASS force_style string.
-// primaryColor, position, and subtitleSize from opts override the preset defaults.
+// Position is embedded in each SRT line as an \an tag ({\\an2}/{\\an5}/{\\an8})
+// so force_style does NOT include Alignment — inline tags always take precedence
+// and are reliably honoured by FFmpeg's SRT-to-ASS converter.
+// MarginV is a fixed edge padding (pixels from the video edge toward center).
 function buildForceStyle(style: string, opts: SubtitleStyleOptions = {}): string {
-  const alignment = positionToAlignment(opts.position || 'bottom');
-
-  // Fontname=DejaVu Sans is used because Railway/Linux containers don't have Arial.
-  // DejaVu Sans is available on Debian/Ubuntu via fonts-dejavu-core (pre-installed on most images).
+  // Fontname=DejaVu Sans: available on Alpine via font-dejavu (installed in Dockerfile).
   const FONT = 'DejaVu Sans';
   const sz = cssPxToAssSize(opts.subtitleSize ?? 18);
+  const MARGIN = 30; // px from edge; applies to both top and bottom depending on \an tag
 
   const presets: Record<string, string> = {
-    emphasis: `Fontname=${FONT},Fontsize=${sz},Bold=1,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=4,Shadow=2,MarginV=40,Alignment=${alignment}`,
-    rhythm:   `Fontname=${FONT},Fontsize=${sz},Bold=0,Italic=1,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=2,Shadow=1,MarginV=35,Alignment=${alignment}`,
-    uniform:  `Fontname=${FONT},Fontsize=${sz},Bold=0,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=2,Shadow=0,MarginV=30,Alignment=${alignment}`,
-    default:  `Fontname=${FONT},Fontsize=${sz},Bold=0,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=2,Shadow=0,MarginV=30,Alignment=${alignment}`,
-    classic:  `Fontname=${FONT},Fontsize=${sz},Bold=0,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=3,Shadow=1,MarginV=30,Alignment=${alignment}`,
-    bold:     `Fontname=${FONT},Fontsize=${sz},Bold=1,PrimaryColour=&H0000FFFF,OutlineColour=&H00000000,Outline=3,Shadow=2,MarginV=30,Alignment=${alignment}`,
-    minimal:  `Fontname=${FONT},Fontsize=${sz},Bold=0,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=1,Shadow=0,MarginV=30,Alignment=${alignment}`,
-    tiktok:   `Fontname=${FONT},Fontsize=${sz},Bold=1,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=4,Shadow=2,MarginV=50,Alignment=${alignment}`,
+    emphasis: `Fontname=${FONT},Fontsize=${sz},Bold=1,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=4,Shadow=2,MarginV=${MARGIN}`,
+    rhythm:   `Fontname=${FONT},Fontsize=${sz},Bold=0,Italic=1,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=2,Shadow=1,MarginV=${MARGIN}`,
+    uniform:  `Fontname=${FONT},Fontsize=${sz},Bold=0,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=2,Shadow=0,MarginV=${MARGIN}`,
+    default:  `Fontname=${FONT},Fontsize=${sz},Bold=0,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=2,Shadow=0,MarginV=${MARGIN}`,
+    classic:  `Fontname=${FONT},Fontsize=${sz},Bold=0,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=3,Shadow=1,MarginV=${MARGIN}`,
+    bold:     `Fontname=${FONT},Fontsize=${sz},Bold=1,PrimaryColour=&H0000FFFF,OutlineColour=&H00000000,Outline=3,Shadow=2,MarginV=${MARGIN}`,
+    minimal:  `Fontname=${FONT},Fontsize=${sz},Bold=0,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=1,Shadow=0,MarginV=${MARGIN}`,
+    tiktok:   `Fontname=${FONT},Fontsize=${sz},Bold=1,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=4,Shadow=2,MarginV=${MARGIN}`,
   };
 
   let base = presets[style] ?? presets['default'];
@@ -327,15 +309,14 @@ export function burnSubtitles(
   outputPath: string,
   style: string = 'default',
   subtitleSize: number = 18,
-  primaryColor?: string,
-  position?: string
+  primaryColor?: string
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     try {
       const ffmpegPath = (typeof ffmpegStatic === 'string' ? ffmpegStatic : 'ffmpeg') as string;
 
       const cleanPath = subtitlePath.replace(/^['"]|['"]$/g, '');
-      const forceStyle = buildForceStyle(style, { primaryColor, position, subtitleSize });
+      const forceStyle = buildForceStyle(style, { primaryColor, subtitleSize });
       const filter = `subtitles='${cleanPath}':force_style='${forceStyle}'`;
 
       logger.info(`Burning subtitles — style: ${style}, filter: ${filter}`);

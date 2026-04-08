@@ -70,13 +70,25 @@ function toSRTTime(seconds: number): string {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')},${String(ms).padStart(3, '0')}`;
 }
 
+// Maps position name → ASS \an alignment tag embedded in SRT text.
+// Inline \an tags are always honoured by FFmpeg's SRT→ASS converter,
+// unlike force_style Alignment which is silently ignored for SRT inputs.
+function positionTag(position: string): string {
+  switch (position) {
+    case 'top':    return '{\\an8}';
+    case 'center': return '{\\an5}';
+    default:       return '{\\an2}'; // bottom
+  }
+}
+
 // Group words into readable subtitle chunks:
 // - max 5 words per line
 // - max 3 seconds per subtitle
 // - keeps natural phrasing via punctuated_word
-function wordsToSRT(words: DeepgramWord[], uppercase = false): string {
+function wordsToSRT(words: DeepgramWord[], uppercase = false, position = 'bottom'): string {
   const MAX_WORDS = 5;
   const MAX_DURATION = 3.0;
+  const tag = positionTag(position);
   const entries: string[] = [];
   let i = 0;
   let index = 1;
@@ -95,10 +107,11 @@ function wordsToSRT(words: DeepgramWord[], uppercase = false): string {
     }
 
     const groupEnd = words[j - 1].end;
-    const text = uppercase ? group.join(' ').trim().toUpperCase() : group.join(' ').trim();
+    const raw = group.join(' ').trim();
+    const text = (uppercase ? raw.toUpperCase() : raw);
 
     if (text) {
-      entries.push(`${index}\n${toSRTTime(groupStart)} --> ${toSRTTime(groupEnd)}\n${text}\n`);
+      entries.push(`${index}\n${toSRTTime(groupStart)} --> ${toSRTTime(groupEnd)}\n${tag}${text}\n`);
       index++;
     }
 
@@ -110,15 +123,16 @@ function wordsToSRT(words: DeepgramWord[], uppercase = false): string {
 
 // ─── Mock fallback ────────────────────────────────────────────────────────────
 
-function buildMockSRT(startTime: number, endTime: number): string {
+function buildMockSRT(startTime: number, endTime: number, position = 'bottom'): string {
   const texts = ['Amazing content', 'Keep watching', 'Check this out', 'Incredible moment', 'Stay tuned'];
+  const tag = positionTag(position);
   let srt = '';
   let t = 0;
   let idx = 1;
   const clipDuration = endTime - startTime;
   while (t < clipDuration) {
     const segEnd = Math.min(t + 5, clipDuration);
-    srt += `${idx}\n${toSRTTime(t)} --> ${toSRTTime(segEnd)}\n${texts[idx % texts.length]}\n\n`;
+    srt += `${idx}\n${toSRTTime(t)} --> ${toSRTTime(segEnd)}\n${tag}${texts[idx % texts.length]}\n\n`;
     t = segEnd;
     idx++;
   }
@@ -140,7 +154,8 @@ export async function generateSubtitles(
   endTime: number,
   tempDir: string,
   apiKey?: string,
-  uppercase = false
+  uppercase = false,
+  position = 'bottom'
 ): Promise<string | null> {
   const subtitlePath = path.join(tempDir, `subtitles-${Date.now()}.srt`);
   const audioPath = path.join(tempDir, `audio-${Date.now()}.wav`);
@@ -155,7 +170,7 @@ export async function generateSubtitles(
         const words = await callDeepgramAPI(audioPath, apiKey);
 
         if (words.length > 0) {
-          fs.writeFileSync(subtitlePath, wordsToSRT(words, uppercase), 'utf-8');
+          fs.writeFileSync(subtitlePath, wordsToSRT(words, uppercase, position), 'utf-8');
           logger.info(`Deepgram subtitles written (${words.length} words → SRT): ${subtitlePath}`);
           return subtitlePath;
         }
@@ -170,7 +185,7 @@ export async function generateSubtitles(
       logger.warn('No DEEPGRAM_API_KEY — using mock subtitles');
     }
 
-    fs.writeFileSync(subtitlePath, buildMockSRT(startTime, endTime), 'utf-8');
+    fs.writeFileSync(subtitlePath, buildMockSRT(startTime, endTime, position), 'utf-8');
     return subtitlePath;
   } catch (error) {
     logger.error('generateSubtitles failed:', error);
