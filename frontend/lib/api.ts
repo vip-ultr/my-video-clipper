@@ -94,7 +94,7 @@ export async function startAnalysis(videoId: string) {
 }
 
 // Generate clips based on clipping mode
-export async function generateClips(videoId: string, options: { clippingMode?: string; clipCount?: number; clipDuration?: number; customStartTimes?: string[] }) {
+export async function generateClips(videoId: string, options: { clippingMode?: string; clipCount?: number; clipDuration?: number; customStartTimes?: string[]; customEndTimes?: string[] }) {
   return apiClient.post(`/processing/${videoId}/generate-clips`, options);
 }
 

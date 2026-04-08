@@ -15,7 +15,7 @@ interface ProcessingViewProps {
 
 export function ProcessingView({ videoId }: ProcessingViewProps) {
   const router = useRouter();
-  const { clipCount, projectName, clipDuration, clipStartTimes, clippingMode: storeClippingMode = 'manual-slicing', generatedClips, setGeneratedClips } = useUploadStore();
+  const { clipCount, projectName, clipDuration, clipStartTimes, clipEndTimes, clippingMode: storeClippingMode = 'manual-slicing', generatedClips, setGeneratedClips } = useUploadStore();
 
   const clippingMode = storeClippingMode === 'ai-detection' ? 'AI' : 'MANUAL';
   // Restore state from store so navigating back doesn't reset the clips list
@@ -41,7 +41,8 @@ export function ProcessingView({ videoId }: ProcessingViewProps) {
         clippingMode,
         clipCount: clipCount || 3,
         clipDuration: clipDuration || undefined,
-        customStartTimes: clippingMode === 'MANUAL' && clipStartTimes.some(t => t.trim()) ? clipStartTimes : undefined
+        customStartTimes: clippingMode === 'MANUAL' && clipStartTimes.some(t => t.trim()) ? clipStartTimes : undefined,
+        customEndTimes: clippingMode === 'MANUAL' && clipEndTimes && clipEndTimes.some(t => t.trim()) ? clipEndTimes : undefined
       });
 
       clearInterval(interval);

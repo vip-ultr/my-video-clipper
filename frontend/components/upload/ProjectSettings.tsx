@@ -14,6 +14,8 @@ interface ProjectSettingsProps {
   onClipDurationChange: (duration: number) => void;
   clipStartTimes: string[];
   onClipStartTimesChange: (times: string[]) => void;
+  clipEndTimes: string[];
+  onClipEndTimesChange: (times: string[]) => void;
 }
 
 export function ProjectSettings({
@@ -26,28 +28,43 @@ export function ProjectSettings({
   clipDuration,
   onClipDurationChange,
   clipStartTimes,
-  onClipStartTimesChange
+  onClipStartTimesChange,
+  clipEndTimes,
+  onClipEndTimesChange
 }: ProjectSettingsProps) {
   const [clipCountInput, setClipCountInput] = useState(String(clipCount));
 
-  // Keep start times array length in sync with clipCount
+  // Keep start/end times array length in sync with clipCount
   useEffect(() => {
-    const current = clipStartTimes.slice(0, clipCount);
-    while (current.length < clipCount) current.push('');
-    if (current.join(',') !== clipStartTimes.slice(0, clipCount).join(',') || current.length !== clipStartTimes.length) {
-      onClipStartTimesChange(current);
+    const currentStart = clipStartTimes.slice(0, clipCount);
+    while (currentStart.length < clipCount) currentStart.push('');
+    if (currentStart.join(',') !== clipStartTimes.slice(0, clipCount).join(',') || currentStart.length !== clipStartTimes.length) {
+      onClipStartTimesChange(currentStart);
+    }
+
+    const currentEnd = clipEndTimes.slice(0, clipCount);
+    while (currentEnd.length < clipCount) currentEnd.push('');
+    if (currentEnd.join(',') !== clipEndTimes.slice(0, clipCount).join(',') || currentEnd.length !== clipEndTimes.length) {
+      onClipEndTimesChange(currentEnd);
     }
   }, [clipCount]);
 
   const handleStartTimeChange = (index: number, value: string) => {
-    // Allow only digits and colons
-    const sanitized = value.replace(/[^0-9:]/g, '').slice(0, 5);
+    const sanitized = value.replace(/[^0-9:]/g, '').slice(0, 8);
     const updated = [...clipStartTimes];
     updated[index] = sanitized;
     onClipStartTimesChange(updated);
   };
 
+  const handleEndTimeChange = (index: number, value: string) => {
+    const sanitized = value.replace(/[^0-9:]/g, '').slice(0, 8);
+    const updated = [...clipEndTimes];
+    updated[index] = sanitized;
+    onClipEndTimesChange(updated);
+  };
+
   const allStartTimesEmpty = clipStartTimes.every(t => !t.trim());
+  const allEndTimesEmpty = clipEndTimes.every(t => !t.trim());
 
   return (
     <div className="space-y-6">
@@ -132,19 +149,30 @@ export function ProjectSettings({
             </button>
           ))}
         </div>
+        {clippingMode === 'manual-slicing' && (
+          <p className="text-xs text-gray-400 mt-1">Used as fallback when no end time is set.</p>
+        )}
       </div>
 
-      {/* Custom Start Times — manual mode only */}
+      {/* Custom Start & End Times — manual mode only */}
       {clippingMode === 'manual-slicing' && (
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Clock className="w-4 h-4 text-gray-500" />
-            <label className="block text-sm font-medium">Clip Start Times</label>
+            <label className="block text-sm font-medium">Clip Timestamps</label>
             <span className="text-xs text-gray-400">(optional)</span>
           </div>
           <p className="text-xs text-gray-500 mb-3">
-            Leave blank to cut sequentially from the start of the video. Format: <span className="font-mono">MM:SS</span>
+            Leave blank to cut sequentially. Format: <span className="font-mono">MM:SS</span> or <span className="font-mono">HH:MM:SS</span>
           </p>
+
+          {/* Column headers */}
+          <div className="flex items-center gap-3 mb-2">
+            <span className="w-16 flex-shrink-0" />
+            <span className="flex-1 text-xs font-medium text-gray-500 text-center">Start</span>
+            <span className="flex-1 text-xs font-medium text-gray-500 text-center">End</span>
+          </div>
+
           <div className="space-y-2">
             {Array.from({ length: clipCount }).map((_, i) => (
               <div key={i} className="flex items-center gap-3">
@@ -155,14 +183,23 @@ export function ProjectSettings({
                   value={clipStartTimes[i] ?? ''}
                   onChange={(e) => handleStartTimeChange(i, e.target.value)}
                   className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-black font-mono text-sm"
-                  maxLength={5}
+                  maxLength={8}
+                />
+                <input
+                  type="text"
+                  placeholder="MM:SS"
+                  value={clipEndTimes[i] ?? ''}
+                  onChange={(e) => handleEndTimeChange(i, e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-black font-mono text-sm"
+                  maxLength={8}
                 />
               </div>
             ))}
           </div>
-          {allStartTimesEmpty && (
+
+          {allStartTimesEmpty && allEndTimesEmpty && (
             <p className="text-xs text-gray-400 mt-2">
-              No start times set — clips will be cut from the beginning, one after another.
+              No timestamps set — clips will be cut sequentially from the beginning using the clip duration above.
             </p>
           )}
         </div>

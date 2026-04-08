@@ -101,7 +101,7 @@ router.post(
   '/:videoId/generate-clips',
   asyncHandler(async (req: Request, res: Response) => {
     const { videoId } = req.params;
-    const { clippingMode = 'MANUAL', clipCount = 3, clipDuration = null, customStartTimes = null } = req.body;
+    const { clippingMode = 'MANUAL', clipCount = 3, clipDuration = null, customStartTimes = null, customEndTimes = null } = req.body;
 
     const video = await getVideo(videoId);
     if (!video) {
@@ -127,16 +127,23 @@ router.post(
           ? Number(clipDuration)
           : Math.floor(totalDuration / normalizedClipCount);
 
-        // Parse custom start times if provided (array of "MM:SS" or seconds)
+        const parseTime = (t: string | number): number => {
+          if (typeof t === 'number') return t;
+          const parts = String(t).split(':').map(Number);
+          if (parts.length === 2) return parts[0] * 60 + parts[1];
+          if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+          return Number(t) || 0;
+        };
+
+        // Parse custom start/end times if provided (array of "MM:SS" or seconds)
         const parsedStartTimes: number[] | null =
           Array.isArray(customStartTimes) && customStartTimes.length > 0
-            ? customStartTimes.map((t: string | number) => {
-                if (typeof t === 'number') return t;
-                const parts = String(t).split(':').map(Number);
-                if (parts.length === 2) return parts[0] * 60 + parts[1];
-                if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
-                return Number(t) || 0;
-              })
+            ? customStartTimes.map(parseTime)
+            : null;
+
+        const parsedEndTimes: number[] | null =
+          Array.isArray(customEndTimes) && customEndTimes.length > 0
+            ? customEndTimes.map(parseTime)
             : null;
 
         // Build start times: custom if provided, else sequential from 0
@@ -145,11 +152,14 @@ router.post(
           : Array.from({ length: normalizedClipCount }, (_, i) => i * desiredClipDuration);
 
         let clipIndex = 0;
-        for (const startTime of startTimes) {
+        for (let i = 0; i < startTimes.length; i++) {
+          const startTime = startTimes[i];
           // Stop if we've gone past the video
           if (startTime >= totalDuration) break;
 
-          const endTime = Math.min(startTime + desiredClipDuration, totalDuration);
+          // Use custom end time if provided and valid, otherwise fall back to duration
+          const customEnd = parsedEndTimes && parsedEndTimes[i] > 0 ? parsedEndTimes[i] : null;
+          const endTime = Math.min(customEnd ?? startTime + desiredClipDuration, totalDuration);
           if (endTime <= startTime) break;
 
           const clipId = randomUUID();

@@ -17,6 +17,7 @@ export interface UploadState {
   clipCount: number;
   clipDuration: number;
   clipStartTimes: string[];
+  clipEndTimes: string[];
   generatedClips: ClipItem[];
   videoId: string | null;
   isUploading: boolean;
@@ -29,6 +30,7 @@ export interface UploadState {
   setClipCount: (count: number) => void;
   setClipDuration: (duration: number) => void;
   setClipStartTimes: (times: string[]) => void;
+  setClipEndTimes: (times: string[]) => void;
   setGeneratedClips: (clips: ClipItem[]) => void;
   setVideoId: (id: string | null) => void;
   setIsUploading: (uploading: boolean) => void;
@@ -44,6 +46,7 @@ const initialState = {
   clipCount: 5,
   clipDuration: 40,
   clipStartTimes: [],
+  clipEndTimes: [],
   generatedClips: [],
   videoId: null,
   isUploading: false,
@@ -60,6 +63,7 @@ export const useUploadStore = create<UploadState>((set) => ({
   setClipCount: (count) => set({ clipCount: count }),
   setClipDuration: (duration) => set({ clipDuration: duration }),
   setClipStartTimes: (times) => set({ clipStartTimes: times }),
+  setClipEndTimes: (times) => set({ clipEndTimes: times }),
   setGeneratedClips: (clips) => set({ generatedClips: clips }),
   setVideoId: (id) => set({ videoId: id }),
   setIsUploading: (uploading) => set({ isUploading: uploading }),
