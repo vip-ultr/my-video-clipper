@@ -24,6 +24,7 @@ router.post(
       projectName: req.body.projectName,
       subtitlesEnabled: req.body.subtitlesEnabled || false,
       subtitleStyle: req.body.subtitleStyle || 'classic',
+      subtitleSize: req.body.subtitleSize || 18,
       subtitlePrimaryColor: req.body.subtitlePrimaryColor || '#FFFFFF',
       subtitleSecondaryColor: req.body.subtitleSecondaryColor || '#999999',
       subtitlePosition: req.body.subtitlePosition || 'bottom',

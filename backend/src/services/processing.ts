@@ -116,6 +116,7 @@ export async function processClip(settings: ClipSettings): Promise<{ success: bo
             escapedPath,
             subtitledPath,
             settings.subtitleStyle || 'default',
+            settings.subtitleSize ?? 18,
             settings.subtitlePrimaryColor || undefined,
             settings.subtitlePosition || undefined
           );

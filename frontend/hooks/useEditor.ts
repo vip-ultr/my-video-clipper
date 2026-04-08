@@ -8,6 +8,7 @@ export function useEditor() {
   const {
     subtitlesEnabled,
     subtitleStyle,
+    subtitleSize,
     subtitlePrimaryColor,
     subtitleSecondaryColor,
     subtitlePosition,
@@ -26,6 +27,7 @@ export function useEditor() {
     error,
     setSubtitlesEnabled,
     setSubtitleStyle,
+    setSubtitleSize,
     setSubtitlePrimaryColor,
     setSubtitleSecondaryColor,
     setSubtitlePosition,
@@ -58,6 +60,7 @@ export function useEditor() {
           projectName,
           subtitlesEnabled,
           subtitleStyle,
+          subtitleSize,
           subtitlePrimaryColor,
           subtitleSecondaryColor,
           subtitlePosition,
@@ -92,6 +95,7 @@ export function useEditor() {
     [
       subtitlesEnabled,
       subtitleStyle,
+      subtitleSize,
       subtitlePrimaryColor,
       subtitleSecondaryColor,
       subtitlePosition,
@@ -114,6 +118,7 @@ export function useEditor() {
   return {
     subtitlesEnabled,
     subtitleStyle,
+    subtitleSize,
     subtitlePrimaryColor,
     subtitleSecondaryColor,
     subtitlePosition,
@@ -132,6 +137,7 @@ export function useEditor() {
     error,
     setSubtitlesEnabled,
     setSubtitleStyle,
+    setSubtitleSize,
     setSubtitlePrimaryColor,
     setSubtitleSecondaryColor,
     setSubtitlePosition,

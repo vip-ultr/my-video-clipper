@@ -3,6 +3,7 @@ import { create } from 'zustand';
 export interface EditorState {
   subtitlesEnabled: boolean;
   subtitleStyle: string;
+  subtitleSize: number;
   subtitlePrimaryColor: string;
   subtitleSecondaryColor: string;
   subtitlePosition: string;
@@ -22,6 +23,7 @@ export interface EditorState {
 
   setSubtitlesEnabled: (enabled: boolean) => void;
   setSubtitleStyle: (style: string) => void;
+  setSubtitleSize: (size: number) => void;
   setSubtitlePrimaryColor: (color: string) => void;
   setSubtitleSecondaryColor: (color: string) => void;
   setSubtitlePosition: (position: string) => void;
@@ -44,6 +46,7 @@ export interface EditorState {
 const initialState = {
   subtitlesEnabled: false,
   subtitleStyle: 'default',
+  subtitleSize: 18,
   subtitlePrimaryColor: '#FFFFFF',
   subtitleSecondaryColor: '#999999',
   subtitlePosition: 'bottom',
@@ -67,6 +70,7 @@ export const useEditorStore = create<EditorState>((set) => ({
 
   setSubtitlesEnabled: (enabled) => set({ subtitlesEnabled: enabled }),
   setSubtitleStyle: (style) => set({ subtitleStyle: style }),
+  setSubtitleSize: (size) => set({ subtitleSize: size }),
   setSubtitlePrimaryColor: (color) => set({ subtitlePrimaryColor: color }),
   setSubtitleSecondaryColor: (color) => set({ subtitleSecondaryColor: color }),
   setSubtitlePosition: (position) => set({ subtitlePosition: position }),
