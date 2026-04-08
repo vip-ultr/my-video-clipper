@@ -49,20 +49,13 @@ const ASPECT_LABEL: Record<string, string> = {
 
 // Base style presets — textShadow (outline) is built dynamically from user's outline color/toggle.
 const SUBTITLE_BASE: Record<string, Omit<React.CSSProperties, 'textShadow'>> = {
-  emphasis: { fontFamily: 'sans-serif', fontWeight: 700, color: '#ffffff', lineHeight: 1.3 },
-  rhythm:   { fontFamily: 'sans-serif', fontWeight: 400, fontStyle: 'italic', color: '#ffffff', lineHeight: 1.4 },
-  uniform:  { fontFamily: 'sans-serif', fontWeight: 400, color: '#ffffff', lineHeight: 1.4 },
-  default:  { fontFamily: 'sans-serif', fontWeight: 400, color: '#ffffff', lineHeight: 1.4 },
-  classic:  { fontFamily: 'serif',      fontWeight: 400, color: '#ffffff', lineHeight: 1.4 },
-  bold:     { fontFamily: 'sans-serif', fontWeight: 700, color: '#ffff00', lineHeight: 1.3 },
-  minimal:  { fontFamily: 'sans-serif', fontWeight: 400, color: '#ffffff', lineHeight: 1.5 },
-  tiktok:   { fontFamily: 'sans-serif', fontWeight: 700, color: '#ffffff', lineHeight: 1.25 },
+  default: { fontFamily: 'sans-serif', fontWeight: 400, color: '#ffffff', lineHeight: 1.4 },
+  rhythm:  { fontFamily: 'sans-serif', fontWeight: 400, fontStyle: 'italic', color: '#ffffff', lineHeight: 1.4 },
 };
 
 // Outline spread (px) per style — mirrors backend ASS Outline thickness values
 const OUTLINE_SPREAD: Record<string, number> = {
-  emphasis: 2, rhythm: 1, uniform: 1, default: 1,
-  classic: 1.5, bold: 1.5, minimal: 0.5, tiktok: 2,
+  default: 1, rhythm: 1,
 };
 
 function buildTextShadow(style: string, outlineColor: string, outlineEnabled: boolean): string {

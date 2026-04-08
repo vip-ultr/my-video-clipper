@@ -81,13 +81,13 @@ function positionTag(position: string): string {
   }
 }
 
-// Group words into readable subtitle chunks:
-// - max 5 words per line
-// - max 3 seconds per subtitle
+// Group words into short subtitle chunks (1–3 words):
+// - hard cap of 3 words per entry
+// - max 1.5 seconds per entry so words flash quickly
 // - keeps natural phrasing via punctuated_word
 function wordsToSRT(words: DeepgramWord[], uppercase = false, position = 'bottom'): string {
-  const MAX_WORDS = 5;
-  const MAX_DURATION = 3.0;
+  const MAX_WORDS = 3;
+  const MAX_DURATION = 1.5;
   const tag = positionTag(position);
   const entries: string[] = [];
   let i = 0;
@@ -108,7 +108,7 @@ function wordsToSRT(words: DeepgramWord[], uppercase = false, position = 'bottom
 
     const groupEnd = words[j - 1].end;
     const raw = group.join(' ').trim();
-    const text = (uppercase ? raw.toUpperCase() : raw);
+    const text = uppercase ? raw.toUpperCase() : raw;
 
     if (text) {
       entries.push(`${index}\n${toSRTTime(groupStart)} --> ${toSRTTime(groupEnd)}\n${tag}${text}\n`);
@@ -124,14 +124,14 @@ function wordsToSRT(words: DeepgramWord[], uppercase = false, position = 'bottom
 // ─── Mock fallback ────────────────────────────────────────────────────────────
 
 function buildMockSRT(startTime: number, endTime: number, position = 'bottom'): string {
-  const texts = ['Amazing content', 'Keep watching', 'Check this out', 'Incredible moment', 'Stay tuned'];
+  const texts = ['Amazing', 'Keep watching', 'Check this', 'Incredible', 'Stay tuned', 'Right here', 'Look at this', 'So good'];
   const tag = positionTag(position);
   let srt = '';
   let t = 0;
   let idx = 1;
   const clipDuration = endTime - startTime;
   while (t < clipDuration) {
-    const segEnd = Math.min(t + 5, clipDuration);
+    const segEnd = Math.min(t + 1.5, clipDuration);
     srt += `${idx}\n${toSRTTime(t)} --> ${toSRTTime(segEnd)}\n${tag}${texts[idx % texts.length]}\n\n`;
     t = segEnd;
     idx++;

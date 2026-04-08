@@ -22,14 +22,8 @@ interface SubtitleEditorProps {
 }
 
 const STYLES = [
-  { value: 'default',  label: 'Default',  description: 'Clean white, thin outline' },
-  { value: 'emphasis', label: 'Emphasis', description: 'Bold, thick outline' },
-  { value: 'tiktok',   label: 'TikTok',   description: 'Large bold, thick outline' },
-  { value: 'bold',     label: 'Bold',     description: 'Yellow bold, high contrast' },
-  { value: 'classic',  label: 'Classic',  description: 'Drop shadow, cinema look' },
-  { value: 'rhythm',   label: 'Rhythm',   description: 'Italic, natural speech feel' },
-  { value: 'uniform',  label: 'Uniform',  description: 'Consistent, neutral' },
-  { value: 'minimal',  label: 'Minimal',  description: 'Small, hairline stroke' },
+  { value: 'default', label: 'Default', description: 'Clean white, thin outline' },
+  { value: 'rhythm',  label: 'Rhythm',  description: 'Italic, natural speech feel' },
 ];
 
 const POSITIONS = [

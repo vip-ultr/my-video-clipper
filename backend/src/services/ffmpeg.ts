@@ -283,8 +283,7 @@ function buildForceStyle(style: string, opts: SubtitleStyleOptions = {}): string
 
   // Outline thickness per style (0 = no outline)
   const outlineThickness: Record<string, number> = {
-    emphasis: 4, rhythm: 1, uniform: 2, default: 2,
-    classic: 3, bold: 3, minimal: 1, tiktok: 4,
+    default: 2, rhythm: 1,
   };
   const outlineDisabled = opts.outlineColor === null;
   const outline = outlineDisabled ? 0 : (outlineThickness[style] ?? 2);
@@ -293,14 +292,8 @@ function buildForceStyle(style: string, opts: SubtitleStyleOptions = {}): string
     : '&H00000000'; // default black
 
   const presets: Record<string, string> = {
-    emphasis: `Fontname=${FONT},Fontsize=${sz},Bold=1,PrimaryColour=&H00FFFFFF,OutlineColour=${outlineColourHex},Outline=${outline},MarginV=${MARGIN}`,
-    rhythm:   `Fontname=${FONT},Fontsize=${sz},Bold=0,Italic=1,PrimaryColour=&H00FFFFFF,OutlineColour=${outlineColourHex},Outline=${outline},MarginV=${MARGIN}`,
-    uniform:  `Fontname=${FONT},Fontsize=${sz},Bold=0,PrimaryColour=&H00FFFFFF,OutlineColour=${outlineColourHex},Outline=${outline},MarginV=${MARGIN}`,
-    default:  `Fontname=${FONT},Fontsize=${sz},Bold=0,PrimaryColour=&H00FFFFFF,OutlineColour=${outlineColourHex},Outline=${outline},MarginV=${MARGIN}`,
-    classic:  `Fontname=${FONT},Fontsize=${sz},Bold=0,PrimaryColour=&H00FFFFFF,OutlineColour=${outlineColourHex},Outline=${outline},MarginV=${MARGIN}`,
-    bold:     `Fontname=${FONT},Fontsize=${sz},Bold=1,PrimaryColour=&H0000FFFF,OutlineColour=${outlineColourHex},Outline=${outline},MarginV=${MARGIN}`,
-    minimal:  `Fontname=${FONT},Fontsize=${sz},Bold=0,PrimaryColour=&H00FFFFFF,OutlineColour=${outlineColourHex},Outline=${outline},MarginV=${MARGIN}`,
-    tiktok:   `Fontname=${FONT},Fontsize=${sz},Bold=1,PrimaryColour=&H00FFFFFF,OutlineColour=${outlineColourHex},Outline=${outline},MarginV=${MARGIN}`,
+    default: `Fontname=${FONT},Fontsize=${sz},Bold=0,PrimaryColour=&H00FFFFFF,OutlineColour=${outlineColourHex},Outline=${outline},MarginV=${MARGIN}`,
+    rhythm:  `Fontname=${FONT},Fontsize=${sz},Bold=0,Italic=1,PrimaryColour=&H00FFFFFF,OutlineColour=${outlineColourHex},Outline=${outline},MarginV=${MARGIN}`,
   };
 
   let base = presets[style] ?? presets['default'];
