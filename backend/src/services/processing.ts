@@ -124,14 +124,13 @@ export async function processClip(settings: ClipSettings): Promise<{ success: bo
         logger.error('Error during subtitle processing:', subtitleError);
         // Continue without subtitles
       } finally {
-        // Clean up subtitle file
+        // Keep subtitle file for 1 hour for potential re-use, then delete
         if (subtitleFilePath && fs.existsSync(subtitleFilePath)) {
-          try {
-            fs.unlinkSync(subtitleFilePath);
-            logger.info('Cleaned up temporary subtitle file');
-          } catch (cleanupError) {
-            logger.warn('Failed to cleanup temporary subtitle file:', cleanupError);
-          }
+          const srtPathToDelete = subtitleFilePath;
+          setTimeout(() => {
+            try { if (fs.existsSync(srtPathToDelete)) fs.unlinkSync(srtPathToDelete); } catch {}
+          }, 60 * 60 * 1000);
+          logger.info('Subtitle file kept for 1 hour before cleanup');
         }
       }
     }

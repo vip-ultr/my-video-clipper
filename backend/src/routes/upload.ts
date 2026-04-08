@@ -6,6 +6,7 @@ import { spawn } from 'child_process';
 import ffmpegStatic from 'ffmpeg-static';
 import { saveVideo, getVideo } from '../services/supabase.js';
 import { getVideoDuration } from '../services/ffmpeg.js';
+import { generateSubtitlesContent, parseSRTToEntries } from '../services/subtitles.js';
 import { config } from '../utils/config.js';
 import { asyncHandler } from '../middleware/validation.js';
 import { logger } from '../utils/logger.js';
@@ -186,6 +187,61 @@ router.get(
       logger.error('Preview clip spawn error:', err);
       if (!res.headersSent) res.status(500).json({ error: 'FFmpeg not available' });
     });
+  })
+);
+
+// Subtitle preview for a clip segment — caches SRT for 1 hour
+// GET /api/upload/:videoId/subtitles?start=X&end=Y&uppercase=false
+router.get(
+  '/:videoId/subtitles',
+  asyncHandler(async (req: Request, res: Response) => {
+    const { videoId } = req.params;
+    const start     = parseFloat(req.query.start as string || '0');
+    const end       = parseFloat(req.query.end   as string || '0');
+    const uppercase = req.query.uppercase === 'true';
+
+    if (!end || end <= start) {
+      return res.status(400).json({ error: 'Invalid start/end times' });
+    }
+
+    const video = await getVideo(videoId);
+    if (!video) return res.status(404).json({ error: 'Video not found' });
+    if (!fs.existsSync(video.file_path)) return res.status(404).json({ error: 'Video file not found' });
+
+    if (!fs.existsSync(config.paths.clipsDir)) {
+      fs.mkdirSync(config.paths.clipsDir, { recursive: true });
+    }
+
+    const ucSuffix  = uppercase ? '-uc' : '';
+    const cacheFile = path.join(config.paths.clipsDir, `subtitle-${videoId}-${start}-${end}${ucSuffix}.srt`);
+
+    // Serve from cache if fresh (< 1 hour)
+    if (fs.existsSync(cacheFile)) {
+      const stat = fs.statSync(cacheFile);
+      if (Date.now() - stat.mtimeMs < 60 * 60 * 1000) {
+        const srt = fs.readFileSync(cacheFile, 'utf-8');
+        return res.json({ success: true, entries: parseSRTToEntries(srt) });
+      }
+    }
+
+    logger.info(`Generating subtitle preview: video=${videoId} [${start}-${end}s] uppercase=${uppercase}`);
+
+    const srtContent = await generateSubtitlesContent(
+      video.file_path,
+      start,
+      end,
+      config.paths.clipsDir,
+      config.deepgram.apiKey || undefined,
+      uppercase
+    );
+
+    fs.writeFileSync(cacheFile, srtContent, 'utf-8');
+    // Auto-delete cache after 1 hour
+    setTimeout(() => {
+      try { if (fs.existsSync(cacheFile)) fs.unlinkSync(cacheFile); } catch {}
+    }, 60 * 60 * 1000);
+
+    return res.json({ success: true, entries: parseSRTToEntries(srtContent) });
   })
 );
 

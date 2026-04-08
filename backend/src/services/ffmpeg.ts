@@ -579,6 +579,36 @@ export function addWatermark(
   });
 }
 
+export function extractAudioSegment(
+  inputPath: string,
+  startTime: number,
+  endTime: number,
+  outputPath: string
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const ffmpegPath = (typeof ffmpegStatic === 'string' ? ffmpegStatic : 'ffmpeg') as string;
+    const args = [
+      '-ss', String(startTime),
+      '-i', inputPath,
+      '-t', String(endTime - startTime),
+      '-vn',
+      '-ar', '16000',
+      '-ac', '1',
+      '-f', 'wav',
+      '-y',
+      outputPath,
+    ];
+    const proc = spawn(ffmpegPath, args);
+    let stderr = '';
+    proc.stderr?.on('data', (d: any) => { stderr += d.toString(); });
+    proc.on('close', (code: any) => {
+      if (code === 0) resolve();
+      else reject(new Error(`Audio segment extraction failed (code ${code}): ${stderr.slice(-200)}`));
+    });
+    proc.on('error', reject);
+  });
+}
+
 export function extractAudio(inputPath: string, outputPath: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const ffmpegPath = (typeof ffmpegStatic === 'string' ? ffmpegStatic : 'ffmpeg') as string;

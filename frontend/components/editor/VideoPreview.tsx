@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useEffect, useCallback, useState, useMemo } from 'react';
+import { getSubtitlePreview } from '@/lib/api';
 
 interface VideoPreviewProps {
   aspectRatio: string;
@@ -24,6 +25,12 @@ interface VideoPreviewProps {
 }
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+
+interface SRTEntry {
+  start: number;
+  end: number;
+  text: string;
+}
 
 const ASPECT_RATIO_STYLE: Record<string, string> = {
   '9:16': 'aspect-[9/16] max-h-[520px]',
@@ -57,13 +64,15 @@ function subtitlePositionStyle(position: string): React.CSSProperties {
 }
 
 function watermarkPositionStyle(position: string, size: number): React.CSSProperties {
-  const sz = `${size * 0.5}%`;
-  const base: React.CSSProperties = { position: 'absolute', width: sz, maxWidth: '80px', minWidth: '24px', pointerEvents: 'none' };
+  // Backend: scale=iw*(size/100), margin=10px on a ~1080px wide video ≈ 1% from edge.
+  // Keep the same ratio here so preview matches the rendered output.
+  const sz = `${size}%`;
+  const base: React.CSSProperties = { position: 'absolute', width: sz, pointerEvents: 'none' };
   switch (position) {
-    case 'top-left':    return { ...base, top: '6%',    left: '6%'   };
-    case 'top-right':   return { ...base, top: '6%',    right: '6%'  };
-    case 'bottom-left': return { ...base, bottom: '16%', left: '6%'  };
-    default:            return { ...base, bottom: '16%', right: '6%' };
+    case 'top-left':    return { ...base, top: '1%',   left: '1%'  };
+    case 'top-right':   return { ...base, top: '1%',   right: '1%' };
+    case 'bottom-left': return { ...base, bottom: '1%', left: '1%' };
+    default:            return { ...base, bottom: '1%', right: '1%' };
   }
 }
 
@@ -337,8 +346,12 @@ export function VideoPreview({
   const fgRef        = useRef<HTMLVideoElement>(null);
   const bgRef        = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [loading, setLoading]           = useState(false);
-  const [watermarkUrl, setWatermarkUrl] = useState<string | null>(null);
+  const [loading, setLoading]                   = useState(false);
+  const [watermarkUrl, setWatermarkUrl]         = useState<string | null>(null);
+  const [subtitleEntries, setSubtitleEntries]   = useState<SRTEntry[]>([]);
+  const [currentSubtitle, setCurrentSubtitle]   = useState<string | null>(null);
+  const [subtitleFetching, setSubtitleFetching] = useState(false);
+  const subtitleAbortRef = useRef<AbortController | null>(null);
 
   // Derive the watermark preview endpoint URL whenever type/id changes
   const watermarkPreviewUrl = useMemo(() => {
@@ -361,6 +374,53 @@ export function VideoPreview({
       .catch(() => setWatermarkUrl(null));
     return () => { revoked = true; };
   }, [watermarkPreviewUrl]);
+
+  // Fetch real subtitle entries from backend when enabled
+  useEffect(() => {
+    if (!subtitlesEnabled || !videoId || !endTime || endTime <= startTime) {
+      setSubtitleEntries([]);
+      setCurrentSubtitle(null);
+      return;
+    }
+
+    // Abort any in-flight request
+    subtitleAbortRef.current?.abort();
+    const controller = new AbortController();
+    subtitleAbortRef.current = controller;
+
+    const timer = setTimeout(async () => {
+      setSubtitleFetching(true);
+      try {
+        const res = await getSubtitlePreview(videoId, startTime, endTime, subtitleUppercase);
+        if (!controller.signal.aborted && res.data?.entries) {
+          setSubtitleEntries(res.data.entries);
+        }
+      } catch {
+        // Keep previous entries on error
+      } finally {
+        if (!controller.signal.aborted) setSubtitleFetching(false);
+      }
+    }, 600); // small debounce for when user adjusts trim points
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subtitlesEnabled, videoId, startTime, endTime, subtitleUppercase]);
+
+  // Sync displayed subtitle to video playback time
+  useEffect(() => {
+    const fg = fgRef.current;
+    if (!fg) return;
+    const onTime = () => {
+      const t = fg.currentTime;
+      const entry = subtitleEntries.find((e) => t >= e.start && t <= e.end);
+      setCurrentSubtitle(entry?.text ?? null);
+    };
+    fg.addEventListener('timeupdate', onTime);
+    return () => fg.removeEventListener('timeupdate', onTime);
+  }, [subtitleEntries]);
 
   const clipUrl = (videoId && endTime && endTime > startTime)
     ? `${API_BASE}/upload/${videoId}/preview-clip?start=${startTime}&end=${endTime}`
@@ -463,7 +523,13 @@ export function VideoPreview({
                   className="absolute left-0 right-0 px-4 text-center pointer-events-none z-10"
                   style={subtitlePositionStyle(subtitlePosition)}
                 >
-                  <span style={subStyle}>This is how your subtitles will appear</span>
+                  {subtitleFetching ? (
+                    <span style={{ ...subStyle, opacity: 0.5, fontSize: '0.75rem' }}>Generating subtitles…</span>
+                  ) : currentSubtitle ? (
+                    <span style={subStyle}>{currentSubtitle}</span>
+                  ) : subtitleEntries.length > 0 ? null : (
+                    <span style={{ ...subStyle, opacity: 0.4 }}>Play to see subtitles</span>
+                  )}
                 </div>
               )}
 

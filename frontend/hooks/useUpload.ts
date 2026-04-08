@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { useUploadStore } from '@/store/uploadStore';
 import * as api from '@/lib/api';
 
@@ -28,17 +28,26 @@ export function useUpload() {
     setError
   } = useUploadStore();
 
+  const abortRef = useRef<AbortController | null>(null);
+
+  const cancelUpload = useCallback(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+  }, []);
+
   const uploadVideo = useCallback(async () => {
     if (!videoFile || !projectName.trim()) {
       setError('Please select a video and enter a project name');
       return false;
     }
 
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     try {
       setIsUploading(true);
       setError(null);
 
-      // Convert clipping mode from store format to backend format
       const backendClippingMode = clippingMode === 'ai-detection' ? 'AI' : 'MANUAL';
 
       const response = await api.uploadVideo(
@@ -46,7 +55,8 @@ export function useUpload() {
         projectName,
         backendClippingMode,
         clipCount,
-        (percent) => setUploadProgress(percent)
+        (percent) => setUploadProgress(percent),
+        controller.signal
       );
 
       if (response.data.success) {
@@ -57,11 +67,15 @@ export function useUpload() {
         setError(response.data.error || 'Upload failed');
         return false;
       }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Upload failed';
-      setError(message);
+    } catch (err: any) {
+      if (err?.code === 'ERR_CANCELED' || err?.name === 'AbortError' || err?.name === 'CanceledError') {
+        setError(null); // silent — user cancelled
+      } else {
+        setError(err instanceof Error ? err.message : 'Upload failed');
+      }
       return false;
     } finally {
+      abortRef.current = null;
       setIsUploading(false);
     }
   }, [videoFile, projectName, clippingMode, clipCount, setIsUploading, setError, setVideoId, setUploadProgress]);
@@ -83,6 +97,7 @@ export function useUpload() {
     setClipCount,
     setClipDuration,
     setClipStartTimes,
-    uploadVideo
+    uploadVideo,
+    cancelUpload,
   };
 }

@@ -16,7 +16,8 @@ export async function uploadVideo(
   projectName: string,
   clippingMode?: string,
   clipCount?: number,
-  onProgress?: (percent: number) => void
+  onProgress?: (percent: number) => void,
+  signal?: AbortSignal
 ) {
   const formData = new FormData();
   formData.append('video', file);
@@ -26,6 +27,7 @@ export async function uploadVideo(
 
   return apiClient.post('/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
+    signal,
     onUploadProgress: (event) => {
       if (onProgress && event.total) {
         onProgress(Math.round((event.loaded * 100) / event.total));
@@ -64,9 +66,10 @@ export async function getClipsForVideo(videoId: string) {
 }
 
 // Download clip
-export async function downloadClip(clipId: string, onProgress?: (percent: number) => void) {
+export async function downloadClip(clipId: string, onProgress?: (percent: number) => void, signal?: AbortSignal) {
   return apiClient.get(`/download/${clipId}`, {
     responseType: 'blob',
+    signal,
     onDownloadProgress: (event) => {
       if (onProgress && event.total) {
         onProgress(Math.round((event.loaded * 100) / event.total));
@@ -104,6 +107,13 @@ export async function quickDownloadClip(clipId: string, onProgress?: (percent: n
         onProgress(Math.round((event.loaded * 100) / event.total));
       }
     }
+  });
+}
+
+// Get subtitle entries for a clip segment (for preview display)
+export async function getSubtitlePreview(videoId: string, start: number, end: number, uppercase = false) {
+  return apiClient.get(`/upload/${videoId}/subtitles`, {
+    params: { start, end, uppercase },
   });
 }
 

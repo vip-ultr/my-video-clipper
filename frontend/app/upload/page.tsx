@@ -5,7 +5,7 @@ import { useUpload } from '@/hooks/useUpload';
 import { useUploadStore } from '@/store/uploadStore';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { AlertCircle, CheckCircle2, RefreshCw } from 'lucide-react';
+import { AlertCircle, CheckCircle2, RefreshCw, X } from 'lucide-react';
 import { VideoUpload } from '@/components/upload/VideoUpload';
 import { ProjectSettings } from '@/components/upload/ProjectSettings';
 import { UploadProgress } from '@/components/upload/UploadProgress';
@@ -31,7 +31,8 @@ export default function UploadPage() {
     setClipCount,
     setClipDuration,
     setClipStartTimes,
-    uploadVideo
+    uploadVideo,
+    cancelUpload,
   } = useUpload();
 
   const { videoId, reset, setGeneratedClips } = useUploadStore();
@@ -191,13 +192,24 @@ export default function UploadPage() {
 
         {videoFile && (
           <div className="flex justify-center">
-            <Button
-              type="submit"
-              disabled={isUploading || !projectName.trim()}
-              className="bg-black text-white hover:bg-gray-800 h-12 px-8 text-lg"
-            >
-              {isUploading ? 'Uploading...' : 'Start Processing'}
-            </Button>
+            {isUploading ? (
+              <Button
+                type="button"
+                onClick={cancelUpload}
+                className="bg-red-600 text-white hover:bg-red-700 h-12 px-8 text-lg"
+              >
+                <X className="w-4 h-4 mr-2" />
+                Cancel Upload
+              </Button>
+            ) : (
+              <Button
+                type="submit"
+                disabled={!projectName.trim()}
+                className="bg-black text-white hover:bg-gray-800 h-12 px-8 text-lg"
+              >
+                Start Processing
+              </Button>
+            )}
           </div>
         )}
       </form>

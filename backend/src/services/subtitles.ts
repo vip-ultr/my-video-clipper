@@ -2,7 +2,7 @@ import { logger } from '../utils/logger.js';
 import fs from 'fs';
 import path from 'path';
 import https from 'https';
-import { extractAudio } from './ffmpeg.js';
+import { extractAudio, extractAudioSegment } from './ffmpeg.js';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -180,4 +180,75 @@ export async function generateSubtitles(
 
 export function escapeSubtitlePath(filePath: string): string {
   return filePath.replace(/\\/g, '/');
+}
+
+// ─── Segment-level subtitle generation (returns SRT string) ──────────────────
+
+/**
+ * Generates SRT content for a specific time range of a source video.
+ * Extracts audio from [startTime, endTime], transcribes via Deepgram (or mock),
+ * and returns the raw SRT string — no files written by this function.
+ */
+export async function generateSubtitlesContent(
+  sourceVideoPath: string,
+  startTime: number,
+  endTime: number,
+  tempDir: string,
+  apiKey?: string,
+  uppercase = false
+): Promise<string> {
+  const audioPath = path.join(tempDir, `sub-audio-${Date.now()}.wav`);
+
+  try {
+    await extractAudioSegment(sourceVideoPath, startTime, endTime, audioPath);
+
+    if (apiKey) {
+      try {
+        logger.info('Calling Deepgram API for subtitle preview...');
+        const words = await callDeepgramAPI(audioPath, apiKey);
+        if (words.length > 0) {
+          logger.info(`Deepgram subtitle preview: ${words.length} words`);
+          return wordsToSRT(words, uppercase);
+        }
+        logger.warn('Deepgram returned no words — falling back to mock');
+      } catch (err) {
+        logger.warn(`Deepgram failed for preview, using mock: ${err instanceof Error ? err.message : err}`);
+      }
+    } else {
+      logger.warn('No DEEPGRAM_API_KEY — using mock subtitles for preview');
+    }
+
+    return buildMockSRT(0, endTime - startTime);
+  } finally {
+    try { if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath); } catch {}
+  }
+}
+
+// ─── SRT parser ──────────────────────────────────────────────────────────────
+
+export interface SRTEntry {
+  start: number;
+  end: number;
+  text: string;
+}
+
+function srtTimeToSeconds(t: string): number {
+  const [hms, ms] = t.split(',');
+  const [h, m, s] = hms.split(':').map(Number);
+  return h * 3600 + m * 60 + s + Number(ms) / 1000;
+}
+
+export function parseSRTToEntries(srt: string): SRTEntry[] {
+  const blocks = srt.trim().split(/\n\s*\n/);
+  return blocks.flatMap((block) => {
+    const lines = block.trim().split('\n');
+    if (lines.length < 3) return [];
+    const timeMatch = lines[1].match(/(\d{2}:\d{2}:\d{2},\d{3}) --> (\d{2}:\d{2}:\d{2},\d{3})/);
+    if (!timeMatch) return [];
+    return [{
+      start: srtTimeToSeconds(timeMatch[1]),
+      end:   srtTimeToSeconds(timeMatch[2]),
+      text:  lines.slice(2).join(' ').trim(),
+    }];
+  });
 }

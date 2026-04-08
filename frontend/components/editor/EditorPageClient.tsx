@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState, useEffect } from 'react';
+import { Suspense, useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEditor } from '@/hooks/useEditor';
 import { useUploadStore, ClipItem } from '@/store/uploadStore';
@@ -14,52 +14,88 @@ import { VideoPreview } from '@/components/editor/VideoPreview';
 import { Button } from '@/components/ui/button';
 import { BackButton } from '@/components/ui/BackButton';
 import { downloadFile } from '@/lib/utils';
-import { Loader2, Download, CheckCircle, AlertCircle } from 'lucide-react';
+import { Loader2, Download, CheckCircle, AlertCircle, X } from 'lucide-react';
 
 // ─── Edit-All progress view ─────────────────────────────────────────────────
 
 interface EditedClip { id: string; index: number; filename: string }
 
 function EditAllResults({ clips, projectName }: { clips: EditedClip[]; projectName: string }) {
-  const [states, setStates] = useState<Record<string, { progress: number; done: boolean; error: boolean }>>(
-    () => Object.fromEntries(clips.map(c => [c.id, { progress: 0, done: false, error: false }]))
+  const [states, setStates] = useState<Record<string, { progress: number; done: boolean; error: boolean; downloading: boolean }>>(
+    () => Object.fromEntries(clips.map(c => [c.id, { progress: 0, done: false, error: false, downloading: false }]))
   );
   const [downloadAllState, setDownloadAllState] = useState<{ active: boolean; done: number; total: number; progress: number }>(
     { active: false, done: 0, total: 0, progress: 0 }
   );
 
-  const setState = (id: string, patch: Partial<typeof states[string]>) =>
+  // per-clip abort controllers
+  const clipAborts = useRef<Record<string, AbortController>>({});
+  // download-all abort flag
+  const allCancelledRef = useRef(false);
+
+  const patchState = (id: string, patch: Partial<typeof states[string]>) =>
     setStates(prev => ({ ...prev, [id]: { ...prev[id], ...patch } }));
 
   const handleDownload = async (clip: EditedClip) => {
-    setState(clip.id, { progress: 0, done: false, error: false });
+    // Cancel any in-progress download for this clip
+    clipAborts.current[clip.id]?.abort();
+    const controller = new AbortController();
+    clipAborts.current[clip.id] = controller;
+
+    patchState(clip.id, { progress: 0, done: false, error: false, downloading: true });
     try {
-      const response = await api.downloadClip(clip.id, (pct) => setState(clip.id, { progress: pct }));
+      const response = await api.downloadClip(
+        clip.id,
+        (pct) => patchState(clip.id, { progress: pct }),
+        controller.signal
+      );
       await downloadFile(response.data, clip.filename);
-      setState(clip.id, { done: true, progress: 100 });
-    } catch {
-      setState(clip.id, { error: true });
+      patchState(clip.id, { done: true, progress: 100, downloading: false });
+    } catch (err: any) {
+      const cancelled = err?.code === 'ERR_CANCELED' || err?.name === 'AbortError' || err?.name === 'CanceledError';
+      patchState(clip.id, { error: !cancelled, progress: 0, downloading: false });
     }
   };
 
+  const handleCancelDownload = (clip: EditedClip) => {
+    clipAborts.current[clip.id]?.abort();
+    patchState(clip.id, { downloading: false, progress: 0 });
+  };
+
   const handleDownloadAll = async () => {
+    allCancelledRef.current = false;
     setDownloadAllState({ active: true, done: 0, total: clips.length, progress: 0 });
+
     for (let i = 0; i < clips.length; i++) {
+      if (allCancelledRef.current) break;
       const clip = clips[i];
-      setState(clip.id, { progress: 0, done: false, error: false });
+
+      const controller = new AbortController();
+      clipAborts.current[clip.id] = controller;
+      patchState(clip.id, { progress: 0, done: false, error: false, downloading: true });
+
       try {
         const response = await api.downloadClip(clip.id, (pct) => {
-          setState(clip.id, { progress: pct });
+          patchState(clip.id, { progress: pct });
           setDownloadAllState(prev => ({ ...prev, progress: Math.round(((i + pct / 100) / clips.length) * 100) }));
-        });
+        }, controller.signal);
         await downloadFile(response.data, clip.filename);
-        setState(clip.id, { done: true, progress: 100 });
+        patchState(clip.id, { done: true, progress: 100, downloading: false });
         setDownloadAllState(prev => ({ ...prev, done: i + 1, progress: Math.round(((i + 1) / clips.length) * 100) }));
-      } catch {
-        setState(clip.id, { error: true });
+      } catch (err: any) {
+        const cancelled = err?.code === 'ERR_CANCELED' || err?.name === 'AbortError' || err?.name === 'CanceledError';
+        patchState(clip.id, { error: !cancelled, progress: 0, downloading: false });
+        if (cancelled) break;
       }
     }
     setDownloadAllState(prev => ({ ...prev, active: false }));
+  };
+
+  const handleCancelAll = () => {
+    allCancelledRef.current = true;
+    Object.values(clipAborts.current).forEach(c => c.abort());
+    clipAborts.current = {};
+    setDownloadAllState({ active: false, done: 0, total: 0, progress: 0 });
   };
 
   return (
@@ -79,28 +115,36 @@ function EditAllResults({ clips, projectName }: { clips: EditedClip[]; projectNa
               <div className="flex-1 min-w-0">
                 <p className="font-semibold">Clip {clip.index + 1}</p>
                 <p className="text-sm text-gray-500 truncate">{clip.filename}</p>
-                {s.progress > 0 && !s.done && (
+                {s.downloading && s.progress > 0 && (
                   <div className="mt-2 bg-gray-100 rounded-full h-1.5">
                     <div className="bg-black h-full rounded-full transition-all duration-200" style={{ width: `${s.progress}%` }} />
                   </div>
                 )}
               </div>
-              <Button
-                size="sm"
-                onClick={() => handleDownload(clip)}
-                disabled={downloadAllState.active}
-                className={`${s.done ? 'bg-gray-700' : 'bg-black'} text-white hover:bg-gray-800 min-w-[100px]`}
-              >
-                {s.error ? (
-                  <><AlertCircle className="w-3.5 h-3.5 mr-1" />Retry</>
-                ) : s.done ? (
-                  <><CheckCircle className="w-3.5 h-3.5 mr-1" />Downloaded</>
-                ) : s.progress > 0 ? (
-                  <><Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />{s.progress}%</>
-                ) : (
-                  <><Download className="w-3.5 h-3.5 mr-1" />Download</>
-                )}
-              </Button>
+              {s.downloading ? (
+                <Button
+                  size="sm"
+                  onClick={() => handleCancelDownload(clip)}
+                  className="bg-red-600 text-white hover:bg-red-700 min-w-[100px]"
+                >
+                  <X className="w-3.5 h-3.5 mr-1" />{s.progress > 0 ? `${s.progress}%` : 'Cancel'}
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  onClick={() => handleDownload(clip)}
+                  disabled={downloadAllState.active}
+                  className={`${s.done ? 'bg-gray-700' : 'bg-black'} text-white hover:bg-gray-800 min-w-[100px]`}
+                >
+                  {s.error ? (
+                    <><AlertCircle className="w-3.5 h-3.5 mr-1" />Retry</>
+                  ) : s.done ? (
+                    <><CheckCircle className="w-3.5 h-3.5 mr-1" />Downloaded</>
+                  ) : (
+                    <><Download className="w-3.5 h-3.5 mr-1" />Download</>
+                  )}
+                </Button>
+              )}
             </div>
           );
         })}
@@ -118,14 +162,23 @@ function EditAllResults({ clips, projectName }: { clips: EditedClip[]; projectNa
         </div>
       )}
 
-      <Button
-        onClick={handleDownloadAll}
-        disabled={downloadAllState.active}
-        className="w-full bg-black text-white hover:bg-gray-800 h-12 text-base"
-      >
-        <Download className="w-4 h-4 mr-2" />
-        Download All
-      </Button>
+      {downloadAllState.active ? (
+        <Button
+          onClick={handleCancelAll}
+          className="w-full bg-red-600 text-white hover:bg-red-700 h-12 text-base"
+        >
+          <X className="w-4 h-4 mr-2" />
+          Cancel Downloads
+        </Button>
+      ) : (
+        <Button
+          onClick={handleDownloadAll}
+          className="w-full bg-black text-white hover:bg-gray-800 h-12 text-base"
+        >
+          <Download className="w-4 h-4 mr-2" />
+          Download All
+        </Button>
+      )}
     </div>
   );
 }
@@ -171,6 +224,7 @@ function EditorContent() {
   const [singleDownloadProgress, setSingleDownloadProgress] = useState(0);
   const [singleDownloading, setSingleDownloading] = useState(false);
   const [singleError, setSingleError] = useState<string | null>(null);
+  const singleAbortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     if (!videoId) router.push('/upload');
@@ -188,18 +242,39 @@ function EditorContent() {
 
   const handleDownloadSingle = async () => {
     if (!singleClipResult) return;
+    singleAbortRef.current?.abort();
+    const controller = new AbortController();
+    singleAbortRef.current = controller;
     setSingleDownloading(true);
     setSingleDownloadProgress(0);
     setSingleError(null);
     try {
-      const response = await api.downloadClip(singleClipResult.clipId, setSingleDownloadProgress);
+      const response = await api.downloadClip(
+        singleClipResult.clipId,
+        (pct) => { if (!controller.signal.aborted) setSingleDownloadProgress(pct); },
+        controller.signal
+      );
       await downloadFile(response.data, singleClipResult.filename || `clip-${singleClipResult.clipId}.mp4`);
       setSingleDownloadProgress(100);
-    } catch (err) {
-      setSingleError(err instanceof Error ? err.message : 'Download failed');
+    } catch (err: any) {
+      const cancelled = err?.code === 'ERR_CANCELED' || err?.name === 'AbortError' || err?.name === 'CanceledError';
+      if (cancelled) {
+        setSingleDownloadProgress(0);
+      } else {
+        setSingleError(err instanceof Error ? err.message : 'Download failed');
+        setSingleDownloadProgress(0);
+      }
     } finally {
+      singleAbortRef.current = null;
       setSingleDownloading(false);
     }
+  };
+
+  const handleCancelSingleDownload = () => {
+    singleAbortRef.current?.abort();
+    singleAbortRef.current = null;
+    setSingleDownloading(false);
+    setSingleDownloadProgress(0);
   };
 
   // ── Edit all: process ────────────────────────────────────────────────────
@@ -258,18 +333,26 @@ function EditorContent() {
         {singleError && <p className="mb-4 text-red-600 text-sm text-center">{singleError}</p>}
 
         <div className="flex flex-col sm:flex-row gap-3">
-          <Button
-            onClick={handleDownloadSingle}
-            disabled={singleDownloading}
-            className="flex-1 bg-black text-white hover:bg-gray-800 h-12 text-base"
-          >
-            {singleDownloading
-              ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Downloading {singleDownloadProgress}%</>
-              : <><Download className="w-4 h-4 mr-2" />Download Clip</>}
-          </Button>
+          {singleDownloading ? (
+            <Button
+              onClick={handleCancelSingleDownload}
+              className="flex-1 bg-red-600 text-white hover:bg-red-700 h-12 text-base"
+            >
+              <X className="w-4 h-4 mr-2" />
+              Cancel{singleDownloadProgress > 0 ? ` ${singleDownloadProgress}%` : ''}
+            </Button>
+          ) : (
+            <Button
+              onClick={handleDownloadSingle}
+              className="flex-1 bg-black text-white hover:bg-gray-800 h-12 text-base"
+            >
+              <Download className="w-4 h-4 mr-2" />Download Clip
+            </Button>
+          )}
           <Button
             variant="outline"
             onClick={() => { setSingleClipResult(null); setSingleDownloadProgress(0); }}
+            disabled={singleDownloading}
             className="flex-1 border-black text-black h-12 text-base"
           >
             Edit Again
