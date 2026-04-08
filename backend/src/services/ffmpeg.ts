@@ -112,7 +112,7 @@ export function applyBlur(
       const filterComplex = [
         '[0:v]split=2[bg][fg]',
         `[bg]scale=1080:1920,scale=360:640,boxblur=${blurRadius}:2,scale=1080:1920[blurred]`,
-        '[fg]scale=1080:-1[front]',
+        '[fg]scale=1080:-2[front]',
         '[blurred][front]overlay=(W-w)/2:(H-h)/2[out]'
       ].join(';');
 
@@ -125,6 +125,7 @@ export function applyBlur(
         '-c:v', 'libx264',
         '-preset', 'ultrafast',
         '-crf', '23',
+        '-threads', '2',
         '-c:a', 'copy',
         '-avoid_negative_ts', 'make_zero',
         '-y',
@@ -140,13 +141,13 @@ export function applyBlur(
         proc.stderr.on('data', (data: any) => { stderr += data.toString(); });
       }
 
-      proc.on('close', (code: any) => {
+      proc.on('close', (code: any, signal: any) => {
         if (code === 0) {
           logger.info(`Blur applied (sigma=${sigma}): ${outputPath}`);
           resolve();
         } else {
-          logger.error('Blur error:', { exitCode: code, stderr: stderr?.slice(-500) || '' });
-          reject(new Error(`FFmpeg blur failed with code ${code}`));
+          logger.error('Blur error:', { exitCode: code, signal, stderr: stderr?.slice(-500) || '' });
+          reject(new Error(`FFmpeg blur failed with code ${code} signal ${signal}`));
         }
       });
 
