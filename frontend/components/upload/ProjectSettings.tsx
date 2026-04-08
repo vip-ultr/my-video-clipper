@@ -100,17 +100,17 @@ export function ProjectSettings({
         <input
           type="number"
           min="1"
-          max="20"
           value={clipCountInput}
           onChange={(e) => setClipCountInput(e.target.value)}
+          onWheel={(e) => (e.target as HTMLInputElement).blur()}
           onBlur={() => {
-            const clamped = Math.min(20, Math.max(1, Number(clipCountInput) || 1));
+            const clamped = Math.max(1, Number(clipCountInput) || 1);
             setClipCountInput(String(clamped));
             onClipCountChange(clamped);
           }}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-black"
         />
-        <p className="text-xs text-gray-500 mt-1">Enter a number between 1 and 20</p>
+        <p className="text-xs text-gray-500 mt-1">Minimum 1 clip</p>
       </div>
 
       {/* Clip Duration */}

@@ -28,12 +28,18 @@ export function useUpload() {
     setError
   } = useUploadStore();
 
-  const abortRef = useRef<AbortController | null>(null);
+  const abortRef     = useRef<AbortController | null>(null);
+  const cancelledRef = useRef(false);
 
   const cancelUpload = useCallback(() => {
+    cancelledRef.current = true;
     abortRef.current?.abort();
     abortRef.current = null;
-  }, []);
+    // Reset UI immediately — don't wait for the async catch/finally in uploadVideo
+    setIsUploading(false);
+    setUploadProgress(0);
+    setError(null);
+  }, [setIsUploading, setUploadProgress, setError]);
 
   const uploadVideo = useCallback(async () => {
     if (!videoFile || !projectName.trim()) {
@@ -41,8 +47,15 @@ export function useUpload() {
       return false;
     }
 
+    // Guard: don't start a new upload immediately after a cancel
+    if (cancelledRef.current) {
+      cancelledRef.current = false;
+      return false;
+    }
+
     const controller = new AbortController();
     abortRef.current = controller;
+    cancelledRef.current = false;
 
     try {
       setIsUploading(true);
@@ -69,7 +82,8 @@ export function useUpload() {
       }
     } catch (err: any) {
       if (err?.code === 'ERR_CANCELED' || err?.name === 'AbortError' || err?.name === 'CanceledError') {
-        setError(null); // silent — user cancelled
+        setError(null);
+        setUploadProgress(0);
       } else {
         setError(err instanceof Error ? err.message : 'Upload failed');
       }

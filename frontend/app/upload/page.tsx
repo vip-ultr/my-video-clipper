@@ -71,6 +71,7 @@ export default function UploadPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isUploading) return; // already in progress, ignore
     const success = await uploadVideo();
     if (success) {
       router.push('/processing');
@@ -195,7 +196,7 @@ export default function UploadPage() {
             {isUploading ? (
               <Button
                 type="button"
-                onClick={cancelUpload}
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); cancelUpload(); }}
                 className="bg-red-600 text-white hover:bg-red-700 h-12 px-8 text-lg"
               >
                 <X className="w-4 h-4 mr-2" />

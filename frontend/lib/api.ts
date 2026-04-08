@@ -7,7 +7,7 @@ const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json'
   },
-  timeout: 180000 // 3 minutes for video processing
+  timeout: 0 // no timeout — large video uploads can take many minutes
 });
 
 // Video upload
