@@ -111,7 +111,7 @@ router.get(
       const buffer = await downloadWatermarkFromStorage('public-watermark', 'default-watermark.png');
       if (!buffer) return res.status(404).json({ error: 'Default watermark not found in storage' });
       res.setHeader('Content-Type', 'image/png');
-      res.setHeader('Cache-Control', 'public, max-age=86400');
+      res.setHeader('Cache-Control', 'no-cache');
       return res.send(buffer);
     }
 
