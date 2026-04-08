@@ -74,7 +74,7 @@ function toSRTTime(seconds: number): string {
 // - max 5 words per line
 // - max 3 seconds per subtitle
 // - keeps natural phrasing via punctuated_word
-function wordsToSRT(words: DeepgramWord[]): string {
+function wordsToSRT(words: DeepgramWord[], uppercase = false): string {
   const MAX_WORDS = 5;
   const MAX_DURATION = 3.0;
   const entries: string[] = [];
@@ -95,7 +95,7 @@ function wordsToSRT(words: DeepgramWord[]): string {
     }
 
     const groupEnd = words[j - 1].end;
-    const text = group.join(' ').trim();
+    const text = uppercase ? group.join(' ').trim().toUpperCase() : group.join(' ').trim();
 
     if (text) {
       entries.push(`${index}\n${toSRTTime(groupStart)} --> ${toSRTTime(groupEnd)}\n${text}\n`);
@@ -139,7 +139,8 @@ export async function generateSubtitles(
   startTime: number,
   endTime: number,
   tempDir: string,
-  apiKey?: string
+  apiKey?: string,
+  uppercase = false
 ): Promise<string | null> {
   const subtitlePath = path.join(tempDir, `subtitles-${Date.now()}.srt`);
   const audioPath = path.join(tempDir, `audio-${Date.now()}.wav`);
@@ -154,7 +155,7 @@ export async function generateSubtitles(
         const words = await callDeepgramAPI(audioPath, apiKey);
 
         if (words.length > 0) {
-          fs.writeFileSync(subtitlePath, wordsToSRT(words), 'utf-8');
+          fs.writeFileSync(subtitlePath, wordsToSRT(words, uppercase), 'utf-8');
           logger.info(`Deepgram subtitles written (${words.length} words → SRT): ${subtitlePath}`);
           return subtitlePath;
         }

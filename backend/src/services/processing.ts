@@ -96,7 +96,8 @@ export async function processClip(settings: ClipSettings): Promise<{ success: bo
           settings.startTime,
           settings.endTime,
           tempDir,
-          config.deepgram.apiKey || undefined
+          config.deepgram.apiKey || undefined,
+          settings.subtitleUppercase ?? false
         );
 
         if (subtitleFilePath && fs.existsSync(subtitleFilePath)) {

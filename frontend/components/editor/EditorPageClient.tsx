@@ -140,12 +140,12 @@ function EditorContent() {
 
   const {
     aspectRatio, quality, fps,
-    subtitlesEnabled, subtitleStyle, subtitlePrimaryColor, subtitleSecondaryColor, subtitlePosition,
+    subtitlesEnabled, subtitleStyle, subtitlePrimaryColor, subtitleSecondaryColor, subtitlePosition, subtitleUppercase,
     blurEnabled, blurStrength,
     watermarkType, watermarkId, watermarkPosition, watermarkSize, watermarkOpacity,
     isProcessing, error,
     setAspectRatio, setQuality, setFps,
-    setSubtitlesEnabled, setSubtitleStyle, setSubtitlePrimaryColor, setSubtitleSecondaryColor, setSubtitlePosition,
+    setSubtitlesEnabled, setSubtitleStyle, setSubtitlePrimaryColor, setSubtitleSecondaryColor, setSubtitlePosition, setSubtitleUppercase,
     setBlurEnabled, setBlurStrength,
     setWatermarkType, setWatermarkId, setWatermarkPosition, setWatermarkSize, setWatermarkOpacity,
     createClip
@@ -328,7 +328,25 @@ function EditorContent() {
       <div className="grid lg:grid-cols-3 gap-8">
         {!isEditAll && (
           <div className="lg:col-span-2">
-            <VideoPreview aspectRatio={aspectRatio} quality={quality} fps={fps} />
+            <VideoPreview
+            aspectRatio={aspectRatio}
+            quality={quality}
+            fps={fps}
+            videoId={videoId}
+            startTime={startTime}
+            endTime={endTime}
+            blurEnabled={blurEnabled}
+            blurStrength={blurStrength}
+            subtitlesEnabled={subtitlesEnabled}
+            subtitleStyle={subtitleStyle}
+            subtitlePrimaryColor={subtitlePrimaryColor}
+            subtitlePosition={subtitlePosition}
+            subtitleUppercase={subtitleUppercase}
+            watermarkType={watermarkType}
+            watermarkPosition={watermarkPosition}
+            watermarkSize={watermarkSize}
+            watermarkOpacity={watermarkOpacity}
+          />
           </div>
         )}
 
@@ -341,6 +359,7 @@ function EditorContent() {
             primaryColor={subtitlePrimaryColor} onPrimaryColorChange={setSubtitlePrimaryColor}
             secondaryColor={subtitleSecondaryColor} onSecondaryColorChange={setSubtitleSecondaryColor}
             position={subtitlePosition} onPositionChange={setSubtitlePosition}
+            uppercase={subtitleUppercase} onUppercaseChange={setSubtitleUppercase}
           />
           <BlurControl enabled={blurEnabled} onEnabledChange={setBlurEnabled} strength={blurStrength} onStrengthChange={setBlurStrength} />
           <WatermarkSelector

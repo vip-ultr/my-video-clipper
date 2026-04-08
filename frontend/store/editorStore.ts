@@ -6,6 +6,7 @@ export interface EditorState {
   subtitlePrimaryColor: string;
   subtitleSecondaryColor: string;
   subtitlePosition: string;
+  subtitleUppercase: boolean;
   blurEnabled: boolean;
   blurStrength: number;
   watermarkType: string;
@@ -24,6 +25,7 @@ export interface EditorState {
   setSubtitlePrimaryColor: (color: string) => void;
   setSubtitleSecondaryColor: (color: string) => void;
   setSubtitlePosition: (position: string) => void;
+  setSubtitleUppercase: (uppercase: boolean) => void;
   setBlurEnabled: (enabled: boolean) => void;
   setBlurStrength: (strength: number) => void;
   setWatermarkType: (type: string) => void;
@@ -41,10 +43,11 @@ export interface EditorState {
 
 const initialState = {
   subtitlesEnabled: false,
-  subtitleStyle: 'emphasis',
+  subtitleStyle: 'default',
   subtitlePrimaryColor: '#FFFFFF',
   subtitleSecondaryColor: '#999999',
   subtitlePosition: 'bottom',
+  subtitleUppercase: false,
   blurEnabled: false,
   blurStrength: 15,
   watermarkType: 'none',
@@ -67,6 +70,7 @@ export const useEditorStore = create<EditorState>((set) => ({
   setSubtitlePrimaryColor: (color) => set({ subtitlePrimaryColor: color }),
   setSubtitleSecondaryColor: (color) => set({ subtitleSecondaryColor: color }),
   setSubtitlePosition: (position) => set({ subtitlePosition: position }),
+  setSubtitleUppercase: (uppercase) => set({ subtitleUppercase: uppercase }),
   setBlurEnabled: (enabled) => set({ blurEnabled: enabled }),
   setBlurStrength: (strength) => set({ blurStrength: strength }),
   setWatermarkType: (type) => set({ watermarkType: type }),

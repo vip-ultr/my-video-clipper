@@ -62,6 +62,7 @@ export interface ClipSettings {
   subtitlePrimaryColor: string;
   subtitleSecondaryColor: string;
   subtitlePosition: string;
+  subtitleUppercase: boolean;
   blurEnabled: boolean;
   blurStrength: number;
   watermarkType: string;

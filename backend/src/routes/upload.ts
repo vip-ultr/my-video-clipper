@@ -2,7 +2,7 @@ import express, { Request, Response } from 'express';
 import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
-import { saveVideo } from '../services/supabase.js';
+import { saveVideo, getVideo } from '../services/supabase.js';
 import { getVideoDuration } from '../services/ffmpeg.js';
 import { config } from '../utils/config.js';
 import { asyncHandler } from '../middleware/validation.js';
@@ -92,6 +92,46 @@ router.post(
       clippingMode: clippingMode,
       clipCount: clipCount
     });
+  })
+);
+
+// Stream original video with HTTP Range support (for <video> preview)
+router.get(
+  '/:videoId/stream',
+  asyncHandler(async (req: Request, res: Response) => {
+    const { videoId } = req.params;
+
+    const video = await getVideo(videoId);
+    if (!video) return res.status(404).json({ error: 'Video not found' });
+
+    const filePath = video.file_path;
+    if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Video file not found' });
+
+    const stat = fs.statSync(filePath);
+    const fileSize = stat.size;
+    const rangeHeader = req.headers.range;
+
+    if (rangeHeader) {
+      const [startStr, endStr] = rangeHeader.replace(/bytes=/, '').split('-');
+      const start = parseInt(startStr, 10);
+      const end = endStr ? parseInt(endStr, 10) : Math.min(start + 1024 * 1024 - 1, fileSize - 1);
+      const chunkSize = end - start + 1;
+
+      res.writeHead(206, {
+        'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+        'Accept-Ranges': 'bytes',
+        'Content-Length': chunkSize,
+        'Content-Type': 'video/mp4',
+      });
+      fs.createReadStream(filePath, { start, end }).pipe(res);
+    } else {
+      res.writeHead(200, {
+        'Content-Length': fileSize,
+        'Content-Type': 'video/mp4',
+        'Accept-Ranges': 'bytes',
+      });
+      fs.createReadStream(filePath).pipe(res);
+    }
   })
 );
 

@@ -27,6 +27,7 @@ router.post(
       subtitlePrimaryColor: req.body.subtitlePrimaryColor || '#FFFFFF',
       subtitleSecondaryColor: req.body.subtitleSecondaryColor || '#999999',
       subtitlePosition: req.body.subtitlePosition || 'bottom',
+      subtitleUppercase: req.body.subtitleUppercase || false,
       blurEnabled: req.body.blurEnabled || false,
       blurStrength: req.body.blurStrength || 15,
       watermarkType: req.body.watermarkType || 'none',
