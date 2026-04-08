@@ -16,6 +16,8 @@ interface VideoPreviewProps {
   subtitleStyle?: string;
   subtitleSize?: number;
   subtitlePrimaryColor?: string;
+  subtitleOutlineColor?: string;
+  subtitleOutlineEnabled?: boolean;
   subtitlePosition?: string;
   subtitleUppercase?: boolean;
   watermarkType?: string;
@@ -45,18 +47,30 @@ const ASPECT_LABEL: Record<string, string> = {
   '1:1':  'Square · 1:1',
 };
 
-// Style presets — font-size is intentionally omitted here; it is driven by
-// the user's subtitleSize prop so the preview matches the rendered video.
-const SUBTITLE_STYLES: Record<string, React.CSSProperties> = {
-  emphasis: { fontFamily: 'sans-serif', fontWeight: 700, color: '#ffffff', textShadow: '-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 3px 6px rgba(0,0,0,0.8)', lineHeight: 1.3 },
-  rhythm:   { fontFamily: 'sans-serif', fontWeight: 400, fontStyle: 'italic', color: '#ffffff', textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.6)', lineHeight: 1.4 },
-  uniform:  { fontFamily: 'sans-serif', fontWeight: 400, color: '#ffffff', textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000', lineHeight: 1.4 },
-  default:  { fontFamily: 'sans-serif', fontWeight: 400, color: '#ffffff', textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000', lineHeight: 1.4 },
-  classic:  { fontFamily: 'serif',      fontWeight: 400, color: '#ffffff', textShadow: '-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 4px 8px rgba(0,0,0,0.7)', lineHeight: 1.4 },
-  bold:     { fontFamily: 'sans-serif', fontWeight: 700, color: '#ffff00', textShadow: '-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 3px 8px rgba(0,0,0,0.9)', lineHeight: 1.3 },
-  minimal:  { fontFamily: 'sans-serif', fontWeight: 400, color: '#ffffff', textShadow: '-0.5px -0.5px 0 #000, 0.5px -0.5px 0 #000, -0.5px 0.5px 0 #000, 0.5px 0.5px 0 #000', lineHeight: 1.5 },
-  tiktok:   { fontFamily: 'sans-serif', fontWeight: 700, color: '#ffffff', textShadow: '-3px -3px 0 #000, 3px -3px 0 #000, -3px 3px 0 #000, 3px 3px 0 #000, 0 4px 10px rgba(0,0,0,0.9)', lineHeight: 1.25 },
+// Base style presets — textShadow (outline) is built dynamically from user's outline color/toggle.
+const SUBTITLE_BASE: Record<string, Omit<React.CSSProperties, 'textShadow'>> = {
+  emphasis: { fontFamily: 'sans-serif', fontWeight: 700, color: '#ffffff', lineHeight: 1.3 },
+  rhythm:   { fontFamily: 'sans-serif', fontWeight: 400, fontStyle: 'italic', color: '#ffffff', lineHeight: 1.4 },
+  uniform:  { fontFamily: 'sans-serif', fontWeight: 400, color: '#ffffff', lineHeight: 1.4 },
+  default:  { fontFamily: 'sans-serif', fontWeight: 400, color: '#ffffff', lineHeight: 1.4 },
+  classic:  { fontFamily: 'serif',      fontWeight: 400, color: '#ffffff', lineHeight: 1.4 },
+  bold:     { fontFamily: 'sans-serif', fontWeight: 700, color: '#ffff00', lineHeight: 1.3 },
+  minimal:  { fontFamily: 'sans-serif', fontWeight: 400, color: '#ffffff', lineHeight: 1.5 },
+  tiktok:   { fontFamily: 'sans-serif', fontWeight: 700, color: '#ffffff', lineHeight: 1.25 },
 };
+
+// Outline spread (px) per style — mirrors backend ASS Outline thickness values
+const OUTLINE_SPREAD: Record<string, number> = {
+  emphasis: 2, rhythm: 1, uniform: 1, default: 1,
+  classic: 1.5, bold: 1.5, minimal: 0.5, tiktok: 2,
+};
+
+function buildTextShadow(style: string, outlineColor: string, outlineEnabled: boolean): string {
+  if (!outlineEnabled) return 'none';
+  const s = OUTLINE_SPREAD[style] ?? 1;
+  const c = outlineColor;
+  return `-${s}px -${s}px 0 ${c}, ${s}px -${s}px 0 ${c}, -${s}px ${s}px 0 ${c}, ${s}px ${s}px 0 ${c}`;
+}
 
 function subtitlePositionStyle(position: string): React.CSSProperties {
   switch (position) {
@@ -343,7 +357,7 @@ export function VideoPreview({
   aspectRatio, quality, fps,
   videoId, startTime = 0, endTime,
   blurEnabled = false, blurStrength = 15,
-  subtitlesEnabled = false, subtitleStyle = 'default', subtitleSize = 18, subtitlePrimaryColor, subtitlePosition = 'bottom', subtitleUppercase = false,
+  subtitlesEnabled = false, subtitleStyle = 'default', subtitleSize = 18, subtitlePrimaryColor, subtitleOutlineColor = '#000000', subtitleOutlineEnabled = true, subtitlePosition = 'bottom', subtitleUppercase = false,
   watermarkType = 'none', watermarkId = null, watermarkPosition = 'bottom-right', watermarkSize = 20, watermarkOpacity = 80,
 }: VideoPreviewProps) {
   const fgRef        = useRef<HTMLVideoElement>(null);
@@ -469,8 +483,9 @@ export function VideoPreview({
   }, []);
 
   const subStyle: React.CSSProperties = {
-    ...(SUBTITLE_STYLES[subtitleStyle] ?? SUBTITLE_STYLES['default']),
+    ...(SUBTITLE_BASE[subtitleStyle] ?? SUBTITLE_BASE['default']),
     fontSize: `${subtitleSize}px`,
+    textShadow: buildTextShadow(subtitleStyle, subtitleOutlineColor, subtitleOutlineEnabled),
     ...(subtitlePrimaryColor ? { color: subtitlePrimaryColor } : {}),
     ...(subtitleUppercase ? { textTransform: 'uppercase' as const } : {}),
   };

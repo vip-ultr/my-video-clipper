@@ -261,9 +261,9 @@ function hexToASS(hex: string): string {
 }
 
 interface SubtitleStyleOptions {
-  primaryColor?: string; // CSS hex e.g. "#FFFFFF"
-  /** User-chosen size in CSS px (default 14). Used directly as ASS Fontsize. */
-  subtitleSize?: number;
+  primaryColor?: string;       // CSS hex e.g. "#FFFFFF"
+  outlineColor?: string | null; // CSS hex, or null to remove outline entirely
+  subtitleSize?: number;       // CSS px, used directly as ASS Fontsize
 }
 
 // CSS px → ASS Fontsize: use directly (1:1 mapping gives matching visual size).
@@ -281,23 +281,33 @@ function buildForceStyle(style: string, opts: SubtitleStyleOptions = {}): string
   const sz = cssPxToAssSize(opts.subtitleSize ?? 14);
   const MARGIN = 30; // px from edge; applies to both top and bottom depending on \an tag
 
+  // Outline thickness per style (0 = no outline)
+  const outlineThickness: Record<string, number> = {
+    emphasis: 4, rhythm: 1, uniform: 2, default: 2,
+    classic: 3, bold: 3, minimal: 1, tiktok: 4,
+  };
+  const outlineDisabled = opts.outlineColor === null;
+  const outline = outlineDisabled ? 0 : (outlineThickness[style] ?? 2);
+  const outlineColourHex = (!outlineDisabled && opts.outlineColor)
+    ? hexToASS(opts.outlineColor)
+    : '&H00000000'; // default black
+
   const presets: Record<string, string> = {
-    emphasis: `Fontname=${FONT},Fontsize=${sz},Bold=1,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=4,MarginV=${MARGIN}`,
-    rhythm:   `Fontname=${FONT},Fontsize=${sz},Bold=0,Italic=1,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=1,MarginV=${MARGIN}`,
-    uniform:  `Fontname=${FONT},Fontsize=${sz},Bold=0,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=2,MarginV=${MARGIN}`,
-    default:  `Fontname=${FONT},Fontsize=${sz},Bold=0,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=2,MarginV=${MARGIN}`,
-    classic:  `Fontname=${FONT},Fontsize=${sz},Bold=0,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=3,MarginV=${MARGIN}`,
-    bold:     `Fontname=${FONT},Fontsize=${sz},Bold=1,PrimaryColour=&H0000FFFF,OutlineColour=&H00000000,Outline=3,MarginV=${MARGIN}`,
-    minimal:  `Fontname=${FONT},Fontsize=${sz},Bold=0,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=1,MarginV=${MARGIN}`,
-    tiktok:   `Fontname=${FONT},Fontsize=${sz},Bold=1,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=4,MarginV=${MARGIN}`,
+    emphasis: `Fontname=${FONT},Fontsize=${sz},Bold=1,PrimaryColour=&H00FFFFFF,OutlineColour=${outlineColourHex},Outline=${outline},MarginV=${MARGIN}`,
+    rhythm:   `Fontname=${FONT},Fontsize=${sz},Bold=0,Italic=1,PrimaryColour=&H00FFFFFF,OutlineColour=${outlineColourHex},Outline=${outline},MarginV=${MARGIN}`,
+    uniform:  `Fontname=${FONT},Fontsize=${sz},Bold=0,PrimaryColour=&H00FFFFFF,OutlineColour=${outlineColourHex},Outline=${outline},MarginV=${MARGIN}`,
+    default:  `Fontname=${FONT},Fontsize=${sz},Bold=0,PrimaryColour=&H00FFFFFF,OutlineColour=${outlineColourHex},Outline=${outline},MarginV=${MARGIN}`,
+    classic:  `Fontname=${FONT},Fontsize=${sz},Bold=0,PrimaryColour=&H00FFFFFF,OutlineColour=${outlineColourHex},Outline=${outline},MarginV=${MARGIN}`,
+    bold:     `Fontname=${FONT},Fontsize=${sz},Bold=1,PrimaryColour=&H0000FFFF,OutlineColour=${outlineColourHex},Outline=${outline},MarginV=${MARGIN}`,
+    minimal:  `Fontname=${FONT},Fontsize=${sz},Bold=0,PrimaryColour=&H00FFFFFF,OutlineColour=${outlineColourHex},Outline=${outline},MarginV=${MARGIN}`,
+    tiktok:   `Fontname=${FONT},Fontsize=${sz},Bold=1,PrimaryColour=&H00FFFFFF,OutlineColour=${outlineColourHex},Outline=${outline},MarginV=${MARGIN}`,
   };
 
   let base = presets[style] ?? presets['default'];
 
   // Override PrimaryColour if caller supplied a custom hex colour
   if (opts.primaryColor) {
-    const assColor = hexToASS(opts.primaryColor);
-    base = base.replace(/PrimaryColour=[^,]+/, `PrimaryColour=${assColor}`);
+    base = base.replace(/PrimaryColour=[^,]+/, `PrimaryColour=${hexToASS(opts.primaryColor)}`);
   }
 
   return base;
@@ -309,14 +319,16 @@ export function burnSubtitles(
   outputPath: string,
   style: string = 'default',
   subtitleSize: number = 14,
-  primaryColor?: string
+  primaryColor?: string,
+  /** Pass a hex color string for outline, or null to remove outline entirely */
+  outlineColor?: string | null
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     try {
       const ffmpegPath = (typeof ffmpegStatic === 'string' ? ffmpegStatic : 'ffmpeg') as string;
 
       const cleanPath = subtitlePath.replace(/^['"]|['"]$/g, '');
-      const forceStyle = buildForceStyle(style, { primaryColor, subtitleSize });
+      const forceStyle = buildForceStyle(style, { primaryColor, outlineColor, subtitleSize });
       const filter = `subtitles='${cleanPath}':force_style='${forceStyle}'`;
 
       logger.info(`Burning subtitles — style: ${style}, filter: ${filter}`);

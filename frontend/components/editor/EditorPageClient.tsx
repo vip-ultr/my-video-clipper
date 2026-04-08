@@ -172,12 +172,12 @@ function EditorContent() {
 
   const {
     aspectRatio, quality, fps,
-    subtitlesEnabled, subtitleStyle, subtitleSize, subtitlePrimaryColor, subtitleSecondaryColor, subtitlePosition, subtitleUppercase,
+    subtitlesEnabled, subtitleStyle, subtitleSize, subtitlePrimaryColor, subtitleOutlineColor, subtitleOutlineEnabled, subtitlePosition, subtitleUppercase,
     blurEnabled, blurStrength,
     watermarkType, watermarkId, watermarkPosition, watermarkSize, watermarkOpacity,
     isProcessing, error,
     setAspectRatio, setQuality, setFps,
-    setSubtitlesEnabled, setSubtitleStyle, setSubtitleSize, setSubtitlePrimaryColor, setSubtitleSecondaryColor, setSubtitlePosition, setSubtitleUppercase,
+    setSubtitlesEnabled, setSubtitleStyle, setSubtitleSize, setSubtitlePrimaryColor, setSubtitleOutlineColor, setSubtitleOutlineEnabled, setSubtitlePosition, setSubtitleUppercase,
     setBlurEnabled, setBlurStrength,
     setWatermarkType, setWatermarkId, setWatermarkPosition, setWatermarkSize, setWatermarkOpacity,
     createClip
@@ -386,7 +386,8 @@ function EditorContent() {
                 style={subtitleStyle} onStyleChange={setSubtitleStyle}
                 size={subtitleSize} onSizeChange={setSubtitleSize}
                 primaryColor={subtitlePrimaryColor} onPrimaryColorChange={setSubtitlePrimaryColor}
-                secondaryColor={subtitleSecondaryColor} onSecondaryColorChange={setSubtitleSecondaryColor}
+                outlineColor={subtitleOutlineColor} onOutlineColorChange={setSubtitleOutlineColor}
+                outlineEnabled={subtitleOutlineEnabled} onOutlineEnabledChange={setSubtitleOutlineEnabled}
                 position={subtitlePosition} onPositionChange={setSubtitlePosition}
                 uppercase={subtitleUppercase} onUppercaseChange={setSubtitleUppercase}
               />
@@ -422,6 +423,8 @@ function EditorContent() {
                 subtitleStyle={subtitleStyle}
                 subtitleSize={subtitleSize}
                 subtitlePrimaryColor={subtitlePrimaryColor}
+                subtitleOutlineColor={subtitleOutlineColor}
+                subtitleOutlineEnabled={subtitleOutlineEnabled}
                 subtitlePosition={subtitlePosition}
                 subtitleUppercase={subtitleUppercase}
                 watermarkType={watermarkType}

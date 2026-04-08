@@ -5,7 +5,8 @@ export interface EditorState {
   subtitleStyle: string;
   subtitleSize: number;
   subtitlePrimaryColor: string;
-  subtitleSecondaryColor: string;
+  subtitleOutlineColor: string;
+  subtitleOutlineEnabled: boolean;
   subtitlePosition: string;
   subtitleUppercase: boolean;
   blurEnabled: boolean;
@@ -25,7 +26,8 @@ export interface EditorState {
   setSubtitleStyle: (style: string) => void;
   setSubtitleSize: (size: number) => void;
   setSubtitlePrimaryColor: (color: string) => void;
-  setSubtitleSecondaryColor: (color: string) => void;
+  setSubtitleOutlineColor: (color: string) => void;
+  setSubtitleOutlineEnabled: (enabled: boolean) => void;
   setSubtitlePosition: (position: string) => void;
   setSubtitleUppercase: (uppercase: boolean) => void;
   setBlurEnabled: (enabled: boolean) => void;
@@ -48,7 +50,8 @@ const initialState = {
   subtitleStyle: 'default',
   subtitleSize: 18,
   subtitlePrimaryColor: '#FFFFFF',
-  subtitleSecondaryColor: '#999999',
+  subtitleOutlineColor: '#000000',
+  subtitleOutlineEnabled: true,
   subtitlePosition: 'bottom',
   subtitleUppercase: false,
   blurEnabled: false,
@@ -72,7 +75,8 @@ export const useEditorStore = create<EditorState>((set) => ({
   setSubtitleStyle: (style) => set({ subtitleStyle: style }),
   setSubtitleSize: (size) => set({ subtitleSize: size }),
   setSubtitlePrimaryColor: (color) => set({ subtitlePrimaryColor: color }),
-  setSubtitleSecondaryColor: (color) => set({ subtitleSecondaryColor: color }),
+  setSubtitleOutlineColor: (color) => set({ subtitleOutlineColor: color }),
+  setSubtitleOutlineEnabled: (enabled) => set({ subtitleOutlineEnabled: enabled }),
   setSubtitlePosition: (position) => set({ subtitlePosition: position }),
   setSubtitleUppercase: (uppercase) => set({ subtitleUppercase: uppercase }),
   setBlurEnabled: (enabled) => set({ blurEnabled: enabled }),
