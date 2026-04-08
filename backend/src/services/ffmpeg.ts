@@ -250,24 +250,79 @@ export function resizeAspectRatio(
   });
 }
 
+// Convert CSS hex colour (#RRGGBB) to ASS BGR format (&H00BBGGRR)
+function hexToASS(hex: string): string {
+  const h = hex.replace('#', '').padStart(6, '0');
+  const r = h.slice(0, 2);
+  const g = h.slice(2, 4);
+  const b = h.slice(4, 6);
+  return `&H00${b}${g}${r}`.toUpperCase();
+}
+
+// ASS Alignment: 2=bottom-center, 8=top-center, 5=mid-center
+function positionToAlignment(position: string): number {
+  switch (position) {
+    case 'top':    return 8;
+    case 'center': return 5;
+    default:       return 2; // bottom
+  }
+}
+
+interface SubtitleStyleOptions {
+  primaryColor?: string; // CSS hex e.g. "#FFFFFF"
+  position?: string;     // 'bottom' | 'top' | 'center'
+}
+
+// Named style presets — each returns an ASS force_style string.
+// primaryColor and position from options override the preset defaults.
+function buildForceStyle(style: string, opts: SubtitleStyleOptions = {}): string {
+  const alignment = positionToAlignment(opts.position || 'bottom');
+
+  const presets: Record<string, string> = {
+    // Clean white text, thin black outline — safe default for any video
+    default: `Fontsize=24,Bold=0,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=2,Shadow=0,MarginV=30,Alignment=${alignment}`,
+
+    // Slightly larger with drop shadow — classic subtitle look
+    classic: `Fontsize=28,Bold=0,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=3,Shadow=1,MarginV=30,Alignment=${alignment}`,
+
+    // Heavy bold yellow — high-contrast for action / sports content
+    bold: `Fontsize=32,Bold=1,PrimaryColour=&H0000FFFF,OutlineColour=&H00000000,Outline=3,Shadow=2,MarginV=30,Alignment=${alignment}`,
+
+    // Small white text, minimal stroke — clean modern look
+    minimal: `Fontsize=22,Bold=0,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=1,Shadow=0,MarginV=30,Alignment=${alignment}`,
+
+    // TikTok-style — large bold text, thick outline, high margin
+    tiktok: `Fontsize=30,Bold=1,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=4,Shadow=2,MarginV=50,Alignment=${alignment}`,
+  };
+
+  let base = presets[style] ?? presets['default'];
+
+  // Override PrimaryColour if caller supplied a custom hex colour
+  if (opts.primaryColor) {
+    const assColor = hexToASS(opts.primaryColor);
+    base = base.replace(/PrimaryColour=[^,]+/, `PrimaryColour=${assColor}`);
+  }
+
+  return base;
+}
+
 export function burnSubtitles(
   inputPath: string,
   subtitlePath: string,
   outputPath: string,
-  style: string = 'default'
+  style: string = 'default',
+  primaryColor?: string,
+  position?: string
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     try {
-      // FFmpeg subtitles filter doesn't support styling options like fontsize
-      // Use the simple subtitles filter to overlay SRT/VTT subtitles
       const ffmpegPath = (typeof ffmpegStatic === 'string' ? ffmpegStatic : 'ffmpeg') as string;
 
-      // Escape the subtitle path for FFmpeg filter
-      // Remove leading/trailing quotes if present and re-add them
       const cleanPath = subtitlePath.replace(/^['"]|['"]$/g, '');
-      const filter = `subtitles='${cleanPath}'`;
+      const forceStyle = buildForceStyle(style, { primaryColor, position });
+      const filter = `subtitles='${cleanPath}':force_style='${forceStyle}'`;
 
-      logger.info(`Burning subtitles with filter: ${filter}`);
+      logger.info(`Burning subtitles — style: ${style}, filter: ${filter}`);
 
       const args = [
         '-i', inputPath,

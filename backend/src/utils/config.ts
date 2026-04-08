@@ -26,6 +26,10 @@ export const config = {
     watermarksDir: process.env.WATERMARKS_DIR || '/tmp/watermarks'
   },
 
+  deepgram: {
+    apiKey: process.env.DEEPGRAM_API_KEY || ''
+  },
+
   huggingface: {
     apiKey: process.env.HUGGINGFACE_API_KEY || ''
   }

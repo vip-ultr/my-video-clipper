@@ -96,7 +96,7 @@ export async function processClip(settings: ClipSettings): Promise<{ success: bo
           settings.startTime,
           settings.endTime,
           tempDir,
-          config.huggingface.apiKey || undefined
+          config.deepgram.apiKey || undefined
         );
 
         if (subtitleFilePath && fs.existsSync(subtitleFilePath)) {
@@ -107,7 +107,9 @@ export async function processClip(settings: ClipSettings): Promise<{ success: bo
             currentInput,
             escapedPath,
             subtitledPath,
-            settings.subtitleStyle || 'default'
+            settings.subtitleStyle || 'default',
+            settings.subtitlePrimaryColor || undefined,
+            settings.subtitlePosition || undefined
           );
 
           fs.unlinkSync(currentInput);
