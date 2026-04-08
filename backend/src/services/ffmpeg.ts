@@ -203,6 +203,7 @@ export function resizeAspectRatio(
         '-c:v', 'libx264',
         '-preset', 'ultrafast',
         '-crf', '23',
+        '-threads', '2',
         '-avoid_negative_ts', 'make_zero',
         '-y',
         outputPath
@@ -278,21 +279,25 @@ interface SubtitleStyleOptions {
 function buildForceStyle(style: string, opts: SubtitleStyleOptions = {}): string {
   const alignment = positionToAlignment(opts.position || 'bottom');
 
+  // Fontname=DejaVu Sans is used because Railway/Linux containers don't have Arial.
+  // DejaVu Sans is available on Debian/Ubuntu via fonts-dejavu-core (pre-installed on most images).
+  const FONT = 'DejaVu Sans';
+
   const presets: Record<string, string> = {
     // Clean white text, thin black outline — safe default for any video
-    default: `Fontsize=24,Bold=0,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=2,Shadow=0,MarginV=30,Alignment=${alignment}`,
+    default: `Fontname=${FONT},Fontsize=24,Bold=0,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=2,Shadow=0,MarginV=30,Alignment=${alignment}`,
 
     // Slightly larger with drop shadow — classic subtitle look
-    classic: `Fontsize=28,Bold=0,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=3,Shadow=1,MarginV=30,Alignment=${alignment}`,
+    classic: `Fontname=${FONT},Fontsize=28,Bold=0,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=3,Shadow=1,MarginV=30,Alignment=${alignment}`,
 
     // Heavy bold yellow — high-contrast for action / sports content
-    bold: `Fontsize=32,Bold=1,PrimaryColour=&H0000FFFF,OutlineColour=&H00000000,Outline=3,Shadow=2,MarginV=30,Alignment=${alignment}`,
+    bold: `Fontname=${FONT},Fontsize=32,Bold=1,PrimaryColour=&H0000FFFF,OutlineColour=&H00000000,Outline=3,Shadow=2,MarginV=30,Alignment=${alignment}`,
 
     // Small white text, minimal stroke — clean modern look
-    minimal: `Fontsize=22,Bold=0,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=1,Shadow=0,MarginV=30,Alignment=${alignment}`,
+    minimal: `Fontname=${FONT},Fontsize=22,Bold=0,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=1,Shadow=0,MarginV=30,Alignment=${alignment}`,
 
     // TikTok-style — large bold text, thick outline, high margin
-    tiktok: `Fontsize=30,Bold=1,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=4,Shadow=2,MarginV=50,Alignment=${alignment}`,
+    tiktok: `Fontname=${FONT},Fontsize=30,Bold=1,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=4,Shadow=2,MarginV=50,Alignment=${alignment}`,
   };
 
   let base = presets[style] ?? presets['default'];
@@ -332,6 +337,7 @@ export function burnSubtitles(
         '-c:v', 'libx264',
         '-preset', 'ultrafast',
         '-crf', '23',
+        '-threads', '2',
         '-avoid_negative_ts', 'make_zero',  // Fix negative timestamps
         '-y',
         outputPath
@@ -519,6 +525,7 @@ export function addWatermark(
         '-c:v', 'libx264',
         '-preset', 'ultrafast',
         '-crf', '23',
+        '-threads', '2',
         '-avoid_negative_ts', 'make_zero',
         '-y',
         outputPath
