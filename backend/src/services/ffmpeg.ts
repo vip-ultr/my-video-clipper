@@ -123,8 +123,8 @@ export function applyBlur(
         '-map', '[out]',
         '-map', '0:a?',
         '-c:v', 'libx264',
-        '-preset', 'ultrafast',
-        '-crf', '23',
+        '-preset', 'fast',
+        '-crf', '26',
         '-threads', '2',
         '-c:a', 'copy',
         '-avoid_negative_ts', 'make_zero',
@@ -201,8 +201,8 @@ export function resizeAspectRatio(
         '-c:a', 'aac',
         '-b:a', '128k',
         '-c:v', 'libx264',
-        '-preset', 'ultrafast',
-        '-crf', '23',
+        '-preset', 'fast',
+        '-crf', '26',
         '-threads', '2',
         '-avoid_negative_ts', 'make_zero',
         '-y',
@@ -332,8 +332,8 @@ export function burnSubtitles(
         '-c:a', 'aac',       // Re-encode audio to fix timestamp sync
         '-b:a', '128k',
         '-c:v', 'libx264',
-        '-preset', 'ultrafast',
-        '-crf', '23',
+        '-preset', 'fast',
+        '-crf', '26',
         '-threads', '2',
         '-avoid_negative_ts', 'make_zero',  // Fix negative timestamps
         '-y',
@@ -389,31 +389,31 @@ export function encodeVideo(
   fps: number,
   outputPath: string
 ): Promise<void> {
-  const bitrates = {
-    low: '1000k',
-    medium: '2500k',
-    high: '5000k'
+  // CRF-based encoding: content-adaptive, no wasted bits on easy scenes.
+  // Lower CRF = better quality + larger file. Range 0–51; 18–28 is practical.
+  const crfMap: Record<string, string> = {
+    low:    '30',
+    medium: '26',
+    high:   '22',
   };
 
   return new Promise((resolve, reject) => {
     try {
-      const bitrate = bitrates[quality as keyof typeof bitrates] || '2500k';
-      logger.info(`Starting video encoding: ${inputPath} -> ${outputPath} (${bitrate}@${fps}fps)`);
+      const crf = crfMap[quality] ?? '26';
+      logger.info(`Starting video encoding: ${inputPath} -> ${outputPath} (CRF ${crf} @ ${fps}fps)`);
 
-      // Use raw FFmpeg for more reliable encoding
-      // Command: ffmpeg -i input -c:v libx264 -b:v bitrate -r fps -c:a aac -b:a 96k -y output
       const ffmpegPath = (typeof ffmpegStatic === 'string' ? ffmpegStatic : 'ffmpeg') as string;
       const args = [
         '-i', inputPath,
         '-vf', 'setpts=PTS-STARTPTS',
         '-af', 'asetpts=PTS-STARTPTS',
         '-c:v', 'libx264',
-        '-b:v', bitrate,
+        '-crf', crf,
         '-r', String(fps),
         '-vsync', 'cfr',
         '-c:a', 'aac',
         '-b:a', '96k',
-        '-preset', 'ultrafast',
+        '-preset', 'fast',
         '-threads', '2',
         '-avoid_negative_ts', 'make_zero',
         '-y',
@@ -520,8 +520,8 @@ export function addWatermark(
         '-c:a', 'aac',
         '-b:a', '128k',
         '-c:v', 'libx264',
-        '-preset', 'ultrafast',
-        '-crf', '23',
+        '-preset', 'fast',
+        '-crf', '26',
         '-threads', '2',
         '-avoid_negative_ts', 'make_zero',
         '-y',
