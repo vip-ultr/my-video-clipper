@@ -286,7 +286,7 @@ function PlayerControls({ videoRef, containerRef }: PlayerControlsProps) {
           </div>
 
           {/* Controls row */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 min-w-0">
             {/* Play/pause */}
             <button
               type="button"
@@ -302,11 +302,11 @@ function PlayerControls({ videoRef, containerRef }: PlayerControlsProps) {
               {formatTime(current)} / {formatTime(duration)}
             </span>
 
-            <div className="flex-1" />
+            <div className="flex-1 min-w-0" />
 
-            {/* Volume */}
+            {/* Volume — hidden on very small containers */}
             <div
-              className="flex items-center gap-1.5"
+              className="hidden sm:flex items-center gap-1.5 shrink-0"
               onClick={(e) => e.stopPropagation()}
             >
               <button
@@ -324,8 +324,23 @@ function PlayerControls({ videoRef, containerRef }: PlayerControlsProps) {
                 step={0.05}
                 value={muted ? 0 : volume}
                 onChange={changeVolume}
-                className="w-16 accent-white cursor-pointer"
+                className="w-14 accent-white cursor-pointer"
               />
+            </div>
+
+            {/* Volume icon only — shown on very small containers */}
+            <div
+              className="flex sm:hidden items-center shrink-0"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                type="button"
+                onClick={toggleMute}
+                className="text-white hover:text-gray-300 transition-colors"
+                aria-label="Toggle mute"
+              >
+                <VolumeIcon muted={muted} />
+              </button>
             </div>
 
             {/* Fullscreen */}

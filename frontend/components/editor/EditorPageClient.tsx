@@ -365,11 +365,11 @@ function EditorContent() {
         </div>
       )}
 
-      {/* Two-column layout: controls left, preview right */}
+      {/* Two-column layout: preview top/right, controls below/left */}
       <div className="flex flex-col lg:flex-row gap-6 items-start">
 
-        {/* ── Left: Controls ── */}
-        <div className="flex-1 min-w-0 space-y-4">
+        {/* ── Controls — below preview on mobile, left on desktop ── */}
+        <div className="flex-1 min-w-0 space-y-4 order-last lg:order-first">
 
           <Section title="Output">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -406,8 +406,8 @@ function EditorContent() {
 
         </div>
 
-        {/* ── Right: Sticky preview + process button ── */}
-        <div className="w-full lg:w-80 xl:w-96 flex-shrink-0">
+        {/* ── Preview + process button — top on mobile, right on desktop ── */}
+        <div className="w-full lg:w-80 xl:w-96 flex-shrink-0 order-first lg:order-last">
           <div className="lg:sticky lg:top-6 space-y-4">
             {!isEditAll && (
               <VideoPreview
