@@ -29,7 +29,7 @@ An AI-powered livestream video clipper that automatically creates short-form cli
 - **Storage**: Railway /tmp (temporary), Supabase Storage (watermarks)
 - **Video Processing**: FFmpeg
 - **Transcription**: Faster Whisper
-- **Analysis**: HuggingFace Sentiment (optional)
+- **Analysis**: HuggingFace Sentiment
 
 ### Deployment
 - **Frontend**: Vercel

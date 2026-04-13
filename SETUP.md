@@ -121,7 +121,7 @@ npm run dev
 ### Step 6: Test Locally
 
 1. Open http://localhost:3000 in your browser
-2. You should see the home page with features
+2. You should see the home page with all features
 3. Click "Get Started" to go to upload page
 4. Try uploading a test video (small file, < 100MB for testing)
 5. Check backend logs for processing status
