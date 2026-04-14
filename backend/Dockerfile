@@ -25,7 +25,7 @@ ENV PORT=3001
 # Tell libass (via ffmpeg-static) where to find fonts on Alpine
 ENV FONTCONFIG_PATH=/etc/fonts
 
-# Expose port
+# Expose port1
 EXPOSE 3001
 
 # Start application
