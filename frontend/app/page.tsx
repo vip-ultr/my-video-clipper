@@ -19,7 +19,7 @@ export default function Home() {
         <div className="text-center">
           <h2 className="text-2xl md:text-4xl font-bold mb-4">Ready to Create Amazing Clips?</h2>
           <p className="text-gray-300 mb-8 text-base md:text-lg max-w-xl mx-auto">
-            Upload your livestream video and start creating professional clips in minutes.
+            Upload your livestream video and start creating clips in minutes.
           </p>
           <Link href="/upload">
             <Button className="bg-white text-black hover:bg-gray-200 text-base md:text-lg h-11 md:h-12 px-6 md:px-8 w-full sm:w-auto">
